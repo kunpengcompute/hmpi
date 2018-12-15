@@ -1,5 +1,6 @@
 /*
  * Copyright (C) Mellanox Technologies Ltd. 2001-2011.  ALL RIGHTS RESERVED.
+ * Copyright (C) 2020 Huawei Technologies Co., Ltd.  All rights reserved.
  * $COPYRIGHT$
  *
  * Additional copyrights may follow
@@ -8,6 +9,7 @@
  */
 
 #include "pml_ucx.h"
+#include "pml_ucx_request.h"
 
 #include "opal/mca/memory/base/base.h"
 
@@ -30,9 +32,9 @@ mca_pml_base_component_2_1_0_t mca_pml_ucx_component = {
          MCA_PML_BASE_VERSION_2_1_0,
 
          .mca_component_name            = "ucx",
-         .mca_component_major_version   = OMPI_MAJOR_VERSION,
-         .mca_component_minor_version   = OMPI_MINOR_VERSION,
-         .mca_component_release_version = OMPI_RELEASE_VERSION,
+         MCA_BASE_MAKE_VERSION(component, OMPI_MAJOR_VERSION,
+                               OMPI_MINOR_VERSION, OMPI_RELEASE_VERSION),
+
          .mca_open_component            = mca_pml_ucx_component_open,
          .mca_close_component           = mca_pml_ucx_component_close,
          .mca_query_component           = NULL,
@@ -87,20 +89,16 @@ static int mca_pml_ucx_component_open(void)
 {
     opal_common_ucx_mca_register();
 
-    return mca_pml_ucx_open();
+    return mca_common_ucx_open("MPI", &ompi_pml_ucx.request_size);
 }
 
 static int mca_pml_ucx_component_close(void)
 {
-    int rc;
-
-    rc = mca_pml_ucx_close();
-    if (rc != 0) {
-        return rc;
-    }
+    int rc = mca_common_ucx_close();
 
     opal_common_ucx_mca_deregister();
-    return 0;
+
+    return rc;
 }
 
 static mca_pml_base_module_t*
@@ -115,7 +113,8 @@ mca_pml_ucx_component_init(int* priority, bool enable_progress_threads,
         return NULL;
     }
 
-    if ( (ret = mca_pml_ucx_init(enable_mpi_threads)) != 0) {
+    ret = mca_common_ucx_init(enable_mpi_threads, &mca_pml_ucx_component.pmlm_version);
+    if (ret < 0) {
         return NULL;
     }
 
@@ -132,6 +131,6 @@ mca_pml_ucx_component_init(int* priority, bool enable_progress_threads,
 
 static int mca_pml_ucx_component_fini(void)
 {
-    return mca_pml_ucx_cleanup();
+    return mca_common_ucx_cleanup();
 }
 

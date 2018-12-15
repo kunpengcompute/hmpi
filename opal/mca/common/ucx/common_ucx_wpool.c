@@ -81,7 +81,9 @@ exit:
 static void _winfo_destructor(opal_common_ucx_winfo_t *winfo)
 {
     if (winfo->inflight_req != UCS_OK) {
-        opal_common_ucx_wait_request_mt(winfo->inflight_req, "opal_common_ucx_flush");
+        opal_common_ucx_wait_request_mt(winfo->inflight_req,
+                                        OPAL_COMMON_UCX_REQUEST_TYPE_UCP,
+                                        "opal_common_ucx_flush");
         winfo->inflight_req = UCS_OK;
     }
 
@@ -774,11 +776,13 @@ OPAL_DECLSPEC int opal_common_ucx_winfo_flush(opal_common_ucx_winfo_t *winfo, in
         req = ucp_worker_flush_nb(winfo->worker, 0, opal_common_ucx_empty_complete_cb);
     }
     if (UCS_PTR_IS_PTR(req)) {
-        ((opal_common_ucx_request_t *) req)->winfo = winfo;
+        ((opal_common_ucx_request_t *)req)->winfo = winfo;
     }
 
     if (OPAL_COMMON_UCX_FLUSH_B) {
-        rc = opal_common_ucx_wait_request_mt(req, "ucp_ep_flush_nb");
+        rc = opal_common_ucx_wait_request_mt(req,
+                                             OPAL_COMMON_UCX_REQUEST_TYPE_UCP,
+                                             "ucp_ep_flush_nb");
     } else {
         *req_ptr = req;
     }
