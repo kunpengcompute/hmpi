@@ -7,6 +7,7 @@
 # Copyright (c) 2016      Los Alamos National Security, LLC. All rights
 #                         reserved.
 # Copyright (c) 2016 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2019 Huawei Technologies Co., Ltd.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -41,16 +42,26 @@ AC_DEFUN([OMPI_CHECK_UCX],[
                                                     [ompi_check_ucx_dir=])],
                                              [true])])
                   ompi_check_ucx_happy="no"
+                  ompi_check_ucg_happy="no"
                   AS_IF([test -z "$ompi_check_ucx_dir"],
                         [OPAL_CHECK_PACKAGE([ompi_check_ucx],
-                                   [ucp/api/ucp.h],
-                                   [ucp],
-                                   [ucp_cleanup],
-                                   [-luct -lucm -lucs],
-                                   [],
-                                   [],
-                                   [ompi_check_ucx_happy="yes"],
-                                   [ompi_check_ucx_happy="no"])
+                                            [ucp/api/ucp.h],
+                                            [ucp],
+                                            [ucp_cleanup],
+                                            [-luct -lucm -lucs],
+                                            [],
+                                            [],
+                                            [ompi_check_ucx_happy="yes"],
+                                            [ompi_check_ucx_happy="no"])
+                         OPAL_CHECK_PACKAGE([ompi_check_ucg],
+                                            [ucg/api/ucg.h],
+                                            [ucg],
+                                            [ucg_cleanup],
+                                            [-lucp -luct -lucm -lucs],
+                                            [],
+                                            [],
+                                            [ompi_check_ucg_happy="yes"],
+                                            [ompi_check_ucg_happy="no"])
                          AS_IF([test "$ompi_check_ucx_happy" = yes],
                                [AC_MSG_CHECKING(for UCX version compatibility)
                                 AC_REQUIRE_CPP
@@ -83,12 +94,21 @@ AC_DEFUN([OMPI_CHECK_UCX],[
                                             [$ompi_check_ucx_libdir],
                                             [ompi_check_ucx_happy="yes"],
                                             [ompi_check_ucx_happy="no"])
+                         OPAL_CHECK_PACKAGE([ompi_check_ucg],
+                                            [ucg/api/ucg.h],
+                                            [ucg],
+                                            [ucg_cleanup],
+                                            [-lucp -luct -lucm -lucs],
+                                            [$ompi_check_ucx_dir],
+                                            [$ompi_check_ucx_libdir],
+                                            [ompi_check_ucg_happy="yes"],
+                                            [ompi_check_ucg_happy="no"])
 
                          CPPFLAGS="$ompi_check_ucx_$1_save_CPPFLAGS"
                          LDFLAGS="$ompi_check_ucx_$1_save_LDFLAGS"
                          LIBS="$ompi_check_ucx_$1_save_LIBS"
 
-                         AS_IF([test "$ompi_check_ucx_happy" = yes],
+                         AS_IF([test "$ompi_check_ucg_happy" = yes],
                                [AC_MSG_CHECKING(for UCX version compatibility)
                                 AC_REQUIRE_CPP
                                 old_CPPFLAGS="$CPPFLAGS"
@@ -162,9 +182,14 @@ AC_DEFUN([OMPI_CHECK_UCX],[
                   OPAL_SUMMARY_ADD([[Transports]],[[Open UCX]],[$1],[$ompi_check_ucx_happy])])])
 
     AS_IF([test "$ompi_check_ucx_happy" = "yes"],
-          [$1_CPPFLAGS="[$]$1_CPPFLAGS $ompi_check_ucx_CPPFLAGS"
-           $1_LDFLAGS="[$]$1_LDFLAGS $ompi_check_ucx_LDFLAGS"
-           $1_LIBS="[$]$1_LIBS $ompi_check_ucx_LIBS"
+          [AS_IF([test "$ompi_check_ucg_happy" = "yes"],
+                 [$1_CPPFLAGS="[$]$1_CPPFLAGS $ompi_check_ucx_CPPFLAGS $ompi_check_ucg_CPPFLAGS"
+                  $1_LDFLAGS="[$]$1_LDFLAGS $ompi_check_ucx_LDFLAGS $ompi_check_ucg_LDFLAGS"
+                  $1_LIBS="[$]$1_LIBS $ompi_check_ucx_LIBS $ompi_check_ucg_LIBS"
+                  AC_DEFINE([HAVE_UCG],[1],[UCX includes UCG (collective API)])],
+                 [$1_CPPFLAGS="[$]$1_CPPFLAGS $ompi_check_ucx_CPPFLAGS"
+                  $1_LDFLAGS="[$]$1_LDFLAGS $ompi_check_ucx_LDFLAGS"
+                  $1_LIBS="[$]$1_LIBS $ompi_check_ucx_LIBS"])
            $2],
           [AS_IF([test ! -z "$with_ucx" && test "$with_ucx" != "no"],
                  [AC_MSG_ERROR([UCX support requested but not found.  Aborting])])

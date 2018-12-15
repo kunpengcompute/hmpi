@@ -22,6 +22,10 @@
 #include <stdint.h>
 
 #include <ucp/api/ucp.h>
+#ifndef UCG_H_
+#define ucg_context_h void*
+#define ucg_params_t void
+#endif
 
 #include "opal/class/opal_list.h"
 #include "opal/include/opal/constants.h"
@@ -61,7 +65,10 @@ BEGIN_C_DECLS
     }
 
 enum opal_common_ucx_req_type {
-    OPAL_COMMON_UCX_REQUEST_TYPE_UCP = 0
+    OPAL_COMMON_UCX_REQUEST_TYPE_UCP = 0,
+#if HAVE_UCG
+    OPAL_COMMON_UCX_REQUEST_TYPE_UCG = 1,
+#endif
 };
 
 /* progress loop to allow call UCX/opal progress, while testing requests by type */
@@ -105,6 +112,9 @@ typedef struct opal_common_ucx_module {
 
     ucp_worker_h                ucp_worker;
     ucp_context_h               ucp_context;
+#ifdef HAVE_UCG
+    ucg_context_h               ucg_context;
+#endif
 
     unsigned                    ref_count;
     const mca_base_component_t *first_version;
@@ -148,7 +158,11 @@ OPAL_DECLSPEC void opal_common_ucx_mca_var_register(const mca_base_component_t *
 
 
 int opal_common_ucx_open(const char *prefix,
+#ifdef HAVE_UCG
+                         const ucg_params_t *ucg_params,
+#else
                          const ucp_params_t *ucp_params,
+#endif
                          size_t *request_size);
 int opal_common_ucx_close(void);
 int opal_common_ucx_init(int enable_mpi_threads,
@@ -202,6 +216,11 @@ ucs_status_t opal_common_ucx_request_status(ucs_status_ptr_t request,
         return ucp_request_test(request, &info);
 #else
         return ucp_request_check_status(request);
+#endif
+
+#ifdef UCG_H_
+    case OPAL_COMMON_UCX_REQUEST_TYPE_UCG:
+        return (1 - *(uintptr_t*)request);
 #endif
 
     default:
