@@ -31,6 +31,8 @@
 #include "ompi/errhandler/errhandler.h"
 #include "ompi/constants.h"
 
+#include "ompi/mpi/c/mpi_api_pvars.h"
+
 #if OMPI_BUILD_MPI_PROFILING
 #if OPAL_HAVE_WEAK_SYMBOLS
 #pragma weak MPI_Init = PMPI_Init
@@ -83,6 +85,11 @@ int MPI_Init(int *argc, char ***argv)
     }
 
     SPC_INIT();
+
+#if defined(MPI_API_PVARS_ENABLE)
+    /* Initialize MPI API PVARs */
+    mpi_api_pvars_init();
+#endif
 
     return MPI_SUCCESS;
 }

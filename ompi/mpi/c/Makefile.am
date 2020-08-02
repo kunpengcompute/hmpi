@@ -444,7 +444,8 @@ libmpi_c_mpi_la_SOURCES = \
         win_test.c \
         win_unlock.c \
 	win_unlock_all.c \
-        win_wait.c
+        win_wait.c \
+        mpi_api_pvars.c
 
 
 if OMPI_ENABLE_MPI1_COMPAT

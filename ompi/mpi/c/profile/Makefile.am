@@ -424,7 +424,8 @@ nodist_libmpi_c_pmpi_la_SOURCES = \
         pwin_test.c \
         pwin_unlock.c \
 	pwin_unlock_all.c \
-        pwin_wait.c
+        pwin_wait.c \
+        pmpi_api_pvars.c
 
 if OMPI_ENABLE_MPI1_COMPAT
 nodist_libmpi_c_pmpi_la_SOURCES += \

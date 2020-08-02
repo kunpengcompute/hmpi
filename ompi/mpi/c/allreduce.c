@@ -34,6 +34,8 @@
 #include "ompi/memchecker.h"
 #include "ompi/runtime/ompi_spc.h"
 
+#include "ompi/mpi/c/mpi_api_pvars.h"
+
 #if OMPI_BUILD_MPI_PROFILING
 #if OPAL_HAVE_WEAK_SYMBOLS
 #pragma weak MPI_Allreduce = PMPI_Allreduce
@@ -48,6 +50,9 @@ int MPI_Allreduce(const void *sendbuf, void *recvbuf, int count,
                   MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
 {
     int err;
+
+    /* Count same params */
+    MPI_API_PVARS_ALL_REDUCE_SAME_PARAMS_COUNT(sendbuf, recvbuf, count);
 
     SPC_RECORD(OMPI_SPC_ALLREDUCE, 1);
 
