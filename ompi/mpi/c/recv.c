@@ -29,6 +29,7 @@
 #include "ompi/memchecker.h"
 #include "ompi/request/request.h"
 #include "ompi/runtime/ompi_spc.h"
+#include "ompi/mpi/c/mpi_api_pvars.h"
 
 #if OMPI_BUILD_MPI_PROFILING
 #if OPAL_HAVE_WEAK_SYMBOLS
@@ -44,6 +45,9 @@ int MPI_Recv(void *buf, int count, MPI_Datatype type, int source,
              int tag, MPI_Comm comm, MPI_Status *status)
 {
     int rc = MPI_SUCCESS;
+
+    /* Count P2P local/remote */
+    MPI_API_PVARS_P2P_LOCAL_REMOTE_COUNT(source, comm);
 
     SPC_RECORD(OMPI_SPC_RECV, 1);
 

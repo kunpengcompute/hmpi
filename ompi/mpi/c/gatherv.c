@@ -32,6 +32,7 @@
 #include "ompi/datatype/ompi_datatype.h"
 #include "ompi/memchecker.h"
 #include "ompi/runtime/ompi_spc.h"
+#include "ompi/mpi/c/mpi_api_pvars.h"
 
 #if OMPI_BUILD_MPI_PROFILING
 #if OPAL_HAVE_WEAK_SYMBOLS
@@ -48,6 +49,9 @@ int MPI_Gatherv(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
                 MPI_Datatype recvtype, int root, MPI_Comm comm)
 {
     int i, size, err;
+
+    /* Log last buffer send size used */
+    MPI_API_PVARS_GATHERV_LAST_SEND_SIZE_USED(sendcount);
 
     SPC_RECORD(OMPI_SPC_GATHERV, 1);
 

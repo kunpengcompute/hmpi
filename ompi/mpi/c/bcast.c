@@ -28,6 +28,7 @@
 #include "ompi/datatype/ompi_datatype.h"
 #include "ompi/memchecker.h"
 #include "ompi/runtime/ompi_spc.h"
+#include "ompi/mpi/c/mpi_api_pvars.h"
 
 #if OMPI_BUILD_MPI_PROFILING
 #if OPAL_HAVE_WEAK_SYMBOLS
@@ -43,6 +44,9 @@ int MPI_Bcast(void *buffer, int count, MPI_Datatype datatype,
               int root, MPI_Comm comm)
 {
     int err;
+
+    /* Log last buffer used */
+    MPI_API_PVARS_BCAST_LAST_BUFFER_USED(buffer);
 
     SPC_RECORD(OMPI_SPC_BCAST, 1);
 
