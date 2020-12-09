@@ -137,7 +137,7 @@ int mca_coll_ucx_allreduce(const void *sbuf, void *rbuf, int count,
     ucs_status_ptr_t req = COLL_UCX_REQ_ALLOCA(ucx_module);
 
     ret = ucg_coll_allreduce_init(sbuf, rbuf, count, (size_t)extent, dtype, ucx_module->ucg_group, 0,
-                                               op, 0, 0, &coll);
+                                  op, 0, 0, &coll);
     if (OPAL_UNLIKELY(ret != UCS_OK)) {
         COLL_UCX_ERROR("ucx allreduce init failed: %s", ucs_status_string(ret));
         goto exit;
@@ -465,7 +465,7 @@ int mca_coll_ucx_bcast(void *buff, int count, struct ompi_datatype_t *dtype, int
         return OMPI_ERROR;
     }
     ret = ucg_coll_bcast_init(buff, buff, count, (size_t)dtype_size, dtype, ucx_module->ucg_group, 0,
-                                           0, root, 0, &coll);
+                              0, root, 0, &coll);
     if (OPAL_UNLIKELY(UCS_STATUS_IS_ERR(ret))) {
         COLL_UCX_ERROR("ucx bcast init failed: %s", ucs_status_string(ret));
         return OMPI_ERROR;
