@@ -49,6 +49,14 @@ int MPI_Init(int *argc, char ***argv)
     int provided;
     char *env;
     int required = MPI_THREAD_SINGLE;
+    int ret;
+    int is_initialized;
+
+    /* Don't re-initialize MPI if already iniitalized */
+    ret = MPI_Initialized(&is_initialized);
+    if (is_initialized) {
+        return MPI_SUCCESS;
+    }
 
     /* check for environment overrides for required thread level.  If
        there is, check to see that it is a valid/supported thread level.
