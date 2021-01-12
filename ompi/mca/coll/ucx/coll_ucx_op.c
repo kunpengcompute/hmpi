@@ -53,7 +53,7 @@
     } \
     \
     MCA_COMMON_UCX_WAIT_LOOP(&ucg_req.req_complete, \
-                             OPAL_COMMON_UCX_REQUEST_TYPE_UCG, \
+                             OPAL_COMMON_UCX_REQUEST_TYPE_UCG, coll, \
                              opal_common_ucx.ucp_worker, "ucx " #_op_name, \
                              COLL_UCX_COMPLETION(&ucg_req));
 

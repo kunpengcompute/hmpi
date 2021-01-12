@@ -557,7 +557,7 @@ mca_pml_ucx_send_nb(ucp_ep_h ep, const void *buf, size_t count,
         return OMPI_SUCCESS;
     } else if (!UCS_PTR_IS_ERR(req)) {
         PML_UCX_VERBOSE(8, "got request %p", (void*)req);
-        MCA_COMMON_UCX_WAIT_LOOP(req, OPAL_COMMON_UCX_REQUEST_TYPE_UCP,
+        MCA_COMMON_UCX_WAIT_LOOP(req, OPAL_COMMON_UCX_REQUEST_TYPE_UCP, 0,
                 opal_common_ucx.ucp_worker, "ucx send", ompi_request_free(&req));
     } else {
         PML_UCX_ERROR("ucx send failed: %s", ucs_status_string(UCS_PTR_STATUS(req)));
@@ -601,7 +601,7 @@ mca_pml_ucx_send_nbr(ucp_ep_h ep, const void *buf, size_t count,
     }
 #endif
 
-    MCA_COMMON_UCX_WAIT_LOOP(req, OPAL_COMMON_UCX_REQUEST_TYPE_UCP,
+    MCA_COMMON_UCX_WAIT_LOOP(req, OPAL_COMMON_UCX_REQUEST_TYPE_UCP, 0,
             opal_common_ucx.ucp_worker, "ucx send nbr", (void)0);
 }
 #endif

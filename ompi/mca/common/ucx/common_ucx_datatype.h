@@ -43,7 +43,6 @@ typedef struct mca_common_ucx_datatype_ctx {
 
 typedef struct mca_common_ucx_convertor {
     opal_free_list_item_t          super;
-    mca_common_ucx_datatype_ctx_t *ctx;
     ompi_datatype_t               *datatype;
     opal_convertor_t               opal_conv;
     size_t                         offset;

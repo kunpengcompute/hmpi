@@ -133,7 +133,8 @@ static void common_ucx_generic_datatype_finish(void *state)
 
     opal_convertor_cleanup(&convertor->opal_conv);
     OMPI_DATATYPE_RELEASE(convertor->datatype);
-    COMMON_UCX_FREELIST_RETURN(&convertor->ctx->convs, &convertor->super);
+    COMMON_UCX_FREELIST_RETURN(&ompi_common_ucx.datatype_ctx.convs,
+                               &convertor->super);
 }
 
 static ucp_generic_dt_ops_t common_ucx_generic_datatype_ops = {
@@ -299,11 +300,9 @@ static void mca_common_ucx_datatype_ctx_construct(mca_common_ucx_datatype_ctx_t 
                                   &ctx->datatype_attr_keyval, NULL, 0,
                                   NULL);
     if (ret != OMPI_SUCCESS) {
-        MCA_COMMON_UCX_ERROR("Failed to create keyval for UCX datatypes: %d", ret);
         return;
     }
 
-    ctx->datatype_attr_keyval = MPI_KEYVAL_INVALID;
     for (i = 0; i < OMPI_DATATYPE_MAX_PREDEFINED; ++i) {
         ctx->predefined_types[i] = COMMON_UCX_DATATYPE_INVALID;
     }
