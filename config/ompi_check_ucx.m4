@@ -157,6 +157,8 @@ AC_DEFUN([OMPI_CHECK_UCX],[
                                          UCP_ATOMIC_FETCH_OP_FOR,
                                          UCP_ATOMIC_FETCH_OP_FXOR,
                                          UCP_PARAM_FIELD_ESTIMATED_NUM_PPN,
+                                         UCP_FLAG_LOCAL_TLS_ONLY,
+                                         UCP_WORKER_PARAM_FIELD_UUID,
                                          UCP_WORKER_FLAG_IGNORE_REQUEST_LEAK],
                                         [], [],
                                         [#include <ucp/api/ucp.h>])
@@ -181,6 +183,7 @@ AC_DEFUN([OMPI_CHECK_UCX],[
 
                   OPAL_SUMMARY_ADD([[Transports]],[[Open UCX]],[$1],[$ompi_check_ucx_happy])])])
 
+    AM_CONDITIONAL([HAVE_UCG], [test "$ompi_check_ucx_happy" = "yes" -a "$ompi_check_ucg_happy" = "yes"])
     AS_IF([test "$ompi_check_ucx_happy" = "yes"],
           [AS_IF([test "$ompi_check_ucg_happy" = "yes"],
                  [$1_CPPFLAGS="[$]$1_CPPFLAGS $ompi_check_ucx_CPPFLAGS $ompi_check_ucg_CPPFLAGS"

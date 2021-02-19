@@ -25,7 +25,7 @@ mca_coll_ucx_component_t mca_coll_ucx_component = {
        about the component itfca */
     {
         .collm_version = {
-            MCA_COLL_BASE_VERSION_2_0_0,
+            MCA_COLL_BASE_VERSION_2_4_0,
 
             /* Component name and version */
             .mca_component_name = "ucx",

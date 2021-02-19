@@ -68,14 +68,14 @@ BEGIN_C_DECLS
 
 enum opal_common_ucx_req_type {
     OPAL_COMMON_UCX_REQUEST_TYPE_UCP = 0,
-#if HAVE_UCG
+#ifdef HAVE_UCG
     OPAL_COMMON_UCX_REQUEST_TYPE_UCG = 1,
 #endif
 };
 
 /* progress loop to allow call UCX/opal progress, while testing requests by type */
 /* used C99 for-statement variable initialization */
-#if HAVE_UCG
+#ifdef HAVE_UCG
 #define MCA_COMMON_UCX_PROGRESS_LOOP_BY_REQ(_worker, _req_type, _req_obj)     \
     ucg_collective_progress_t progress_f;                                     \
     unsigned iter_mask = (unsigned) opal_common_ucx.progress_iterations;      \

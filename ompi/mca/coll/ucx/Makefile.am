@@ -12,6 +12,8 @@
 #
 #
 
+if HAVE_UCG
+
 AM_CPPFLAGS = $(coll_ucx_CPPFLAGS) -DCOLL_UCX_HOME=\"$(coll_ucx_HOME)\" $(coll_ucx_extra_CPPFLAGS)
 
 #dist_ompidata_DATA = help-coll-ucx.txt
@@ -44,3 +46,5 @@ noinst_LTLIBRARIES = $(component_noinst)
 libmca_coll_ucx_la_SOURCES =$(coll_ucx_sources)
 libmca_coll_ucx_la_LIBADD = $(coll_ucx_LIBS)
 libmca_coll_ucx_la_LDFLAGS = -module -avoid-version $(coll_ucx_LDFLAGS)
+
+endif

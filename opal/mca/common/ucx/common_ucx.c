@@ -53,12 +53,13 @@ static void opal_common_ucx_mem_release_cb(void *buf, size_t length, void *cbdat
 OPAL_DECLSPEC void opal_common_ucx_mca_var_register(const mca_base_component_t *component)
 {
     static const char *default_tls = "rc_verbs,ud_verbs,rc_mlx5,dc_mlx5,cuda_ipc,rocm_ipc";
-    static const char *default_devices = "mlx*";
+    static const char *default_devices = "mlx*,hns*";
     static int hook_index;
     static int verbose_index;
     static int progress_index;
     static int tls_index;
     static int devices_index;
+    static int request_leak_check;
     int param;
 
     OPAL_THREAD_LOCK(&opal_common_ucx_mutex);
@@ -132,6 +133,19 @@ OPAL_DECLSPEC void opal_common_ucx_mca_var_register(const mca_base_component_t *
             "bump its priority above ob1. Special values: any (any available)",
             MCA_BASE_VAR_TYPE_STRING, NULL, 0, 0, OPAL_INFO_LVL_3, MCA_BASE_VAR_SCOPE_LOCAL,
             opal_common_ucx.devices);
+
+#if HAVE_DECL_UCP_WORKER_FLAG_IGNORE_REQUEST_LEAK
+        opal_common_ucx.request_leak_check = false;
+        request_leak_check = mca_base_var_register(
+            "opal", "opal_common", "ucx", "request_leak_check",
+            "Enable showing a warning during MPI_Finalize if some "
+            "non-blocking MPI requests have not been released",
+            MCA_BASE_VAR_TYPE_BOOL, NULL, 0, 0, OPAL_INFO_LVL_3, MCA_BASE_VAR_SCOPE_LOCAL,
+            &opal_common_ucx.request_leak_check);
+#else
+        /* If UCX does not support ignoring leak check, then it's always enabled */
+        opal_common_ucx.request_leak_check = true;
+#endif
     }
 
     if (component) {
@@ -150,6 +164,9 @@ OPAL_DECLSPEC void opal_common_ucx_mca_var_register(const mca_base_component_t *
         mca_base_var_register_synonym(devices_index, component->mca_project_name,
                                       component->mca_type_name, component->mca_component_name,
                                       "devices", 0);
+        mca_base_var_register_synonym(request_leak_check, component->mca_project_name,
+                                      component->mca_type_name, component->mca_component_name,
+                                      "request_leak_check", 0);
     }
 
     OPAL_THREAD_UNLOCK(&opal_common_ucx_mutex);
@@ -266,7 +283,7 @@ OPAL_DECLSPEC opal_common_ucx_support_level_t opal_common_ucx_support_level(ucp_
 
     /* Check for special value "any" */
     if (is_any_tl && is_any_device) {
-        MCA_COMMON_UCX_VERBOSE(1, "ucx is enabled on any transport or device",
+        MCA_COMMON_UCX_VERBOSE(1, "ucx is enabled on any transport or device from %s",
                                *opal_common_ucx.tls);
         support_level = OPAL_COMMON_UCX_SUPPORT_DEVICE;
         goto out;
@@ -621,8 +638,10 @@ int opal_common_ucx_open(const char *prefix,
     unsigned major_version, minor_version, release_number;
     ucp_context_attr_t attr;
     ucs_status_t status;
+    int just_query = 0;
 
-    if (opal_common_ucx.first_version != NULL) {
+    if (opal_common_ucx.ref_count++ > 0) {
+        just_query = 1;
         goto query;
     }
 
@@ -636,14 +655,14 @@ int opal_common_ucx_open(const char *prefix,
         MCA_COMMON_UCX_VERBOSE(1, "UCX is disabled because the run-time UCX"
                                " version is 1.8, which has a known catastrophic"
                                " issue");
-        return OPAL_ERROR;
+        goto open_error;
     }
 
 #ifdef HAVE_UCG
     ucg_config_t *config;
     status = ucg_config_read(prefix, NULL, &config);
     if (UCS_OK != status) {
-        return OPAL_ERROR;
+        goto open_error;
     }
 
     status = ucg_init(ucg_params, config, &opal_common_ucx.ucg_context);
@@ -654,27 +673,18 @@ int opal_common_ucx_open(const char *prefix,
     ucg_config_release(config);
 #else
     ucp_config_t *config;
-    status = ucp_config_read("MPI", NULL, &config);
+    status = ucp_config_read(prefix, NULL, &config);
     if (UCS_OK != status) {
-        return OPAL_ERROR;
+        goto open_error;
     }
 
-    status = ucp_init(&ucp_params, config, &opal_common_ucx.ucp_context);
+    status = ucp_init(ucp_params, config, &opal_common_ucx.ucp_context);
     ucp_config_release(config);
 #endif
 
     if (UCS_OK != status) {
-        return OPAL_ERROR;
+        goto open_error;
     }
-
-    /* Initialize CUDA, if supported */
-    opal_common_ucx.cuda_initialized = false;
-#if HAVE_UCP_ATTR_MEMORY_TYPES && OPAL_CUDA_SUPPORT
-    if (attr.memory_types & UCS_BIT(UCS_MEMORY_TYPE_CUDA)) {
-        mca_common_cuda_stage_one_init();
-        opal_common_ucx.cuda_initialized = true;
-    }
-#endif
 
 query:
     /* Query UCX attributes */
@@ -688,21 +698,43 @@ query:
     }
 
     *request_size = attr.request_size;
+    if (just_query) {
+        return OPAL_SUCCESS;
+    }
+
+    /* Initialize CUDA, if supported */
+    opal_common_ucx.cuda_initialized = false;
+#if HAVE_UCP_ATTR_MEMORY_TYPES && OPAL_CUDA_SUPPORT
+    if (attr.memory_types & UCS_BIT(UCS_MEMORY_TYPE_CUDA)) {
+        mca_common_cuda_stage_one_init();
+        opal_common_ucx.cuda_initialized = true;
+    }
+#endif
 
     return OPAL_SUCCESS;
 
 cleanup_ctx:
 #ifdef HAVE_UCG
     ucg_cleanup(opal_common_ucx.ucg_context);
+    opal_common_ucx.ucg_context = NULL;
 #else
     ucp_cleanup(opal_common_ucx.ucp_context);
 #endif
+
+open_error:
+    opal_common_ucx.ucp_context = NULL; /* In case anyone comes querying */
     return OPAL_ERROR;
 }
 
 int opal_common_ucx_close(void)
 {
     MCA_COMMON_UCX_VERBOSE(1, "opal_common_ucx_close");
+
+    MCA_COMMON_UCX_ASSERT(opal_common_ucx.ref_count > 0);
+
+    if (--opal_common_ucx.ref_count > 0) {
+        return OPAL_SUCCESS;
+    }
 
 #if OPAL_CUDA_SUPPORT
     if (opal_common_ucx.cuda_initialized) {
@@ -748,6 +780,11 @@ static int opal_common_ucx_init_worker(int enable_mpi_threads)
     }
 #endif
 
+#if HAVE_DECL_UCP_WORKER_PARAM_FIELD_UUID
+    params.field_mask |= UCP_WORKER_PARAM_FIELD_UUID;
+    params.uuid       |= opal_process_info.myprocid.rank;
+#endif
+
     attr.field_mask = UCP_WORKER_ATTR_FIELD_THREAD_MODE;
     status = ucp_worker_query(opal_common_ucx.ucp_worker, &attr);
     if (UCS_OK != status) {
@@ -785,9 +822,8 @@ int opal_common_ucx_init(int enable_mpi_threads,
 {
     int rc;
 
-    if (opal_common_ucx.ref_count++ > 0) {
-        return (opal_common_ucx.first_version == NULL) ?
-                OPAL_ERROR : OPAL_SUCCESS;
+    if (opal_common_ucx.first_version != NULL) {
+        return OPAL_SUCCESS;
     }
 
     rc = opal_common_ucx_init_worker(enable_mpi_threads);
@@ -795,7 +831,6 @@ int opal_common_ucx_init(int enable_mpi_threads,
         return rc;
     }
 
-    /* Early bird gets the worm */
     rc = opal_common_ucx_send_worker_address(version);
     if (rc < 0) {
         MCA_COMMON_UCX_ERROR("Failed to send worker address")
@@ -811,9 +846,7 @@ int opal_common_ucx_init(int enable_mpi_threads,
 
 int opal_common_ucx_cleanup(void)
 {
-    MCA_COMMON_UCX_ASSERT(opal_common_ucx.ref_count > 0);
-
-    if (--opal_common_ucx.ref_count > 0) {
+    if (opal_common_ucx.ref_count > 1) {
         return OPAL_SUCCESS;
     }
 

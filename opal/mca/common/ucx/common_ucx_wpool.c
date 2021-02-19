@@ -521,8 +521,6 @@ error:
 
 void opal_common_ucx_wpmem_free(opal_common_ucx_wpmem_t *mem)
 {
-    _mem_record_t *mem_rec = NULL, *next;
-
     if (NULL == mem) {
         return;
     }

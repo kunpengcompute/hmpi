@@ -31,14 +31,17 @@ static int mca_coll_ucg_create(mca_coll_ucx_module_t *module,
     args.field_mask               = UCG_GROUP_PARAM_FIELD_MEMBER_COUNT |
                                     UCG_GROUP_PARAM_FIELD_MEMBER_INDEX |
                                     UCG_GROUP_PARAM_FIELD_CB_CONTEXT   |
-                                    UCG_GROUP_PARAM_FIELD_DISTANCES;
+                                    UCG_GROUP_PARAM_FIELD_DISTANCES    |
+                                    UCG_GROUP_PARAM_FIELD_NAME;
     args.member_count             = ompi_comm_size(comm);
     args.member_index             = ompi_comm_rank(comm);
     args.cb_context               = comm;
-    args.distance                 = alloca(args.member_count *
-                                           sizeof(*args.distance));
-    if (args.distance == NULL) {
-        COLL_UCX_ERROR("Failed to allocate memory for %lu local ranks", args.member_count);
+    args.name                     = comm->c_name;
+    args.distance_type            = UCG_GROUP_DISTANCE_TYPE_ARRAY;
+    args.distance_array           = alloca(args.member_count *
+                                           sizeof(*args.distance_array));
+    if (args.distance_array == NULL) {
+        COLL_UCX_ERROR("Failed to allocate memory for %u local ranks", args.member_count);
         return OMPI_ERROR;
     }
 
@@ -48,13 +51,31 @@ static int mca_coll_ucg_create(mca_coll_ucx_module_t *module,
         struct ompi_proc_t *rank_iter =
                 (struct ompi_proc_t*)ompi_comm_peer_lookup(comm, rank_idx);
         if (rank_idx == args.member_index) {
-            args.distance[rank_idx] = UCG_GROUP_MEMBER_DISTANCE_SELF;
+            args.distance_array[rank_idx] = UCG_GROUP_MEMBER_DISTANCE_NONE;
+        } else if (OPAL_PROC_ON_LOCAL_HWTHREAD(rank_iter->super.proc_flags)) {
+            args.distance_array[rank_idx] = UCG_GROUP_MEMBER_DISTANCE_HWTHREAD;
+        } else if (OPAL_PROC_ON_LOCAL_CORE(rank_iter->super.proc_flags)) {
+            args.distance_array[rank_idx] = UCG_GROUP_MEMBER_DISTANCE_CORE;
+        } else if (OPAL_PROC_ON_LOCAL_L1CACHE(rank_iter->super.proc_flags)) {
+            args.distance_array[rank_idx] = UCG_GROUP_MEMBER_DISTANCE_L1CACHE;
+        } else if (OPAL_PROC_ON_LOCAL_L2CACHE(rank_iter->super.proc_flags)) {
+            args.distance_array[rank_idx] = UCG_GROUP_MEMBER_DISTANCE_L2CACHE;
+        } else if (OPAL_PROC_ON_LOCAL_L3CACHE(rank_iter->super.proc_flags)) {
+            args.distance_array[rank_idx] = UCG_GROUP_MEMBER_DISTANCE_L3CACHE;
         } else if (OPAL_PROC_ON_LOCAL_SOCKET(rank_iter->super.proc_flags)) {
-            args.distance[rank_idx] = UCG_GROUP_MEMBER_DISTANCE_SOCKET;
+            args.distance_array[rank_idx] = UCG_GROUP_MEMBER_DISTANCE_SOCKET;
+        } else if (OPAL_PROC_ON_LOCAL_NUMA(rank_iter->super.proc_flags)) {
+            args.distance_array[rank_idx] = UCG_GROUP_MEMBER_DISTANCE_NUMA;
+        } else if (OPAL_PROC_ON_LOCAL_BOARD(rank_iter->super.proc_flags)) {
+            args.distance_array[rank_idx] = UCG_GROUP_MEMBER_DISTANCE_BOARD;
         } else if (OPAL_PROC_ON_LOCAL_HOST(rank_iter->super.proc_flags)) {
-            args.distance[rank_idx] = UCG_GROUP_MEMBER_DISTANCE_HOST;
+            args.distance_array[rank_idx] = UCG_GROUP_MEMBER_DISTANCE_HOST;
+        } else if (OPAL_PROC_ON_LOCAL_CU(rank_iter->super.proc_flags)) {
+            args.distance_array[rank_idx] = UCG_GROUP_MEMBER_DISTANCE_CU;
+        } else if (OPAL_PROC_ON_LOCAL_CLUSTER(rank_iter->super.proc_flags)) {
+            args.distance_array[rank_idx] = UCG_GROUP_MEMBER_DISTANCE_CLUSTER;
         } else {
-            args.distance[rank_idx] = UCG_GROUP_MEMBER_DISTANCE_NET;
+            args.distance_array[rank_idx] = UCG_GROUP_MEMBER_DISTANCE_UNKNOWN;
         }
     }
 
@@ -101,33 +122,12 @@ static int mca_coll_ucx_module_enable(mca_coll_base_module_t *module,
     return OMPI_SUCCESS;
 }
 
-static int mca_coll_ucx_ft_event(int state) {
-    if(OPAL_CRS_CHECKPOINT == state) {
-        ;
-    }
-    else if(OPAL_CRS_CONTINUE == state) {
-        ;
-    }
-    else if(OPAL_CRS_RESTART == state) {
-        ;
-    }
-    else if(OPAL_CRS_TERM == state ) {
-        ;
-    }
-    else {
-        ;
-    }
-
-    return OMPI_SUCCESS;
-}
-
 static void mca_coll_ucx_module_construct(mca_coll_ucx_module_t *module)
 {
     memset(&module->super.super + 1, 0,
            sizeof(*module) - sizeof(module->super.super));
 
     module->super.coll_module_enable  = mca_coll_ucx_module_enable;
-    module->super.ft_event            = mca_coll_ucx_ft_event;
     module->super.coll_allreduce      = mca_coll_ucx_component.stable_reduce ?
                                         mca_coll_ucx_allreduce_stable :
                                         mca_coll_ucx_allreduce;

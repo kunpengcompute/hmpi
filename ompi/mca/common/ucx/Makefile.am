@@ -44,8 +44,8 @@ sources = \
 
 lib_LTLIBRARIES =
 noinst_LTLIBRARIES =
-comp_inst = libmca_common_ompi_ucx.la
-comp_noinst = libmca_common_ompi_ucx_noinst.la
+comp_inst = libmca_common_ucx.la
+comp_noinst = libmca_common_ucx_noinst.la
 
 if MCA_BUILD_ompi_common_ucx_DSO
 lib_LTLIBRARIES += $(comp_inst)
@@ -53,15 +53,19 @@ else
 noinst_LTLIBRARIES += $(comp_noinst)
 endif
 
-libmca_common_ompi_ucx_la_SOURCES = $(headers) $(sources)
-libmca_common_ompi_ucx_la_CPPFLAGS = $(common_ucx_CPPFLAGS)
-libmca_common_ompi_ucx_la_LDFLAGS =  \
+libmca_common_ucx_la_SOURCES = $(headers) $(sources)
+libmca_common_ucx_la_CPPFLAGS = $(common_ucx_CPPFLAGS)
+libmca_common_ucx_la_LDFLAGS =  \
         -version-info $(libmca_ompi_common_ucx_so_version) \
         $(common_ucx_LDFLAGS)
-libmca_common_ompi_ucx_la_LIBADD = \
+libmca_common_ucx_la_LIBADD = \
         $(common_ucx_LIBS) \
-        $(OPAL_TOP_BUILDDIR)/opal/mca/common/ucx/lib@OPAL_LIB_PREFIX@mca_common_ucx.la
-libmca_common_ompi_ucx_noinst_la_SOURCES = $(headers) $(sources)
+        $(OPAL_TOP_BUILDDIR)/opal/mca/common/ucx/lib@OPAL_LIB_NAME@mca_common_ucx.la
+libmca_common_ucx_noinst_la_SOURCES = $(headers) $(sources)
+libmca_common_ucx_noinst_la_CPPFLAGS = $(common_ucx_CPPFLAGS)
+libmca_common_ucx_noinst_la_LDFLAGS = $(common_ucx_LDFLAGS)
+libmca_common_ucx_noinst_la_LIBADD = $(common_ucx_LIBS) \
+	$(OPAL_TOP_BUILDDIR)/opal/mca/common/ucx/lib@OPAL_LIB_NAME@mca_common_ucx.la
 
 # Conditionally install the header files
 

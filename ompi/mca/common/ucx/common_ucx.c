@@ -19,6 +19,8 @@
 #include "ompi/mca/topo/base/base.h"
 #include "ompi/op/op.h"
 
+#define ESTIMATED_ENDPOINT_COUNT (10)
+
 ompi_common_ucx_module_t ompi_common_ucx = {0};
 
 static void mca_common_ucx_request_init_common(ompi_request_t* ompi_req,
@@ -178,10 +180,18 @@ static void mca_common_ucx_completed_request_init(ompi_request_t *ompi_req)
     ompi_request_complete(ompi_req, false);
 }
 
+#if HAVE_UCG
 static int mca_common_ucx_datatype_convert(ompi_datatype_t *mpi_dt,
                                            ucp_datatype_t *ucp_dt)
 {
     *ucp_dt = mca_common_ucx_get_datatype(mpi_dt);
+    return 0;
+}
+
+static int mca_common_ucx_datatype_get_span(void *mpi_dt, int count,
+                                            ptrdiff_t *span, ptrdiff_t *gap)
+{
+    *span = opal_datatype_span(mpi_dt, count, gap);
     return 0;
 }
 
@@ -212,15 +222,14 @@ static int mca_common_ucx_is_commutative(ompi_op_t *op)
     return ompi_op_is_commute(op);
 }
 
-static int mca_common_ucx_resolve_address(void *cb_group_obj,
+static int mca_common_ucx_resolve_address(ompi_communicator_t *comm,
                                           ucg_group_member_index_t rank,
                                           ucp_address_t **addr,
                                           size_t *addr_len)
 {
     /* Sanity checks */
-    ompi_communicator_t* comm = (ompi_communicator_t*)cb_group_obj;
     if (rank == (ucg_group_member_index_t)comm->c_my_rank) {
-        MCA_COMMON_UCX_ERROR("mca_common_ucx_resolve_address(rank=%lu)"
+        MCA_COMMON_UCX_ERROR("mca_common_ucx_resolve_address(rank=%u)"
                              "shouldn't be called on its own rank (loopback)", rank);
         return 1;
     }
@@ -237,13 +246,13 @@ static int mca_common_ucx_resolve_address(void *cb_group_obj,
     int ret = opal_common_ucx_recv_worker_address(&proc_peer->super.proc_name,
                                                   addr, addr_len);
     if (ret < 0) {
-        MCA_COMMON_UCX_ERROR("mca_common_ucx_recv_worker_address(proc=%d rank=%lu) failed",
+        MCA_COMMON_UCX_ERROR("mca_common_ucx_recv_worker_address(proc=%d rank=%u) failed",
                              proc_peer->super.proc_name.vpid, rank);
         return 1;
     }
 
 
-    MCA_COMMON_UCX_VERBOSE(2, "Got proc %d address, size %ld",
+    MCA_COMMON_UCX_VERBOSE(2, "Got process #%d address, size %ld",
                            proc_peer->super.proc_name.vpid, *addr_len);
 
     /* Cache the connection for future invocations with this rank */
@@ -322,6 +331,129 @@ static void mca_common_ucx_collective_completion(ompi_request_t *request,
     ompi_request_complete(request, true);
 }
 
+static int mca_coll_ucx_get_global_rank(ompi_communicator_t *comm,
+                                        ucg_group_member_index_t comm_rank,
+                                        ucg_group_member_index_t *global_rank_p)
+{
+    struct ompi_proc_t *proc = (struct ompi_proc_t*)ompi_comm_peer_lookup(comm, comm_rank);
+
+    *global_rank_p = (ucg_group_member_index_t)proc->super.proc_name.vpid;
+
+    return 0;
+}
+
+/* TODO: put back in...
+static void mca_coll_ucg_init_is_socket_balance(ucg_group_params_t *group_params,
+                                                mca_coll_ucx_module_t *module,
+                                                struct ompi_communicator_t *comm)
+{
+    unsigned pps = ucg_builtin_calculate_ppx(group_params, UCG_GROUP_MEMBER_DISTANCE_SOCKET);
+    unsigned ppn = ucg_builtin_calculate_ppx(group_params, UCG_GROUP_MEMBER_DISTANCE_HOST);
+    char is_socket_balance = (pps == (ppn - pps) || pps == ppn);
+    char result = is_socket_balance;
+    int status = ompi_coll_base_allreduce_intra_basic_linear(&is_socket_balance, &result, 1, MPI_CHAR, MPI_MIN,
+                                                             comm, &module->super);
+    if (status != OMPI_SUCCESS) {
+        int error = MPI_ERR_INTERN;
+        COLL_UCX_ERROR("ompi_coll_base_allreduce_intra_basic_linear failed");
+        ompi_mpi_errors_are_fatal_comm_handler(NULL, &error, "Failed to init is_socket_balance");
+    }
+    group_params->is_socket_balance = result;
+    return;
+}
+
+
+static void mca_coll_ucg_init_is_socket_balance(ucg_group_params_t *group_params, mca_coll_ucx_module_t *module,
+                                                struct ompi_communicator_t *comm)
+{
+    unsigned pps = ucg_builtin_calculate_ppx(group_params, UCG_GROUP_MEMBER_DISTANCE_SOCKET);
+    unsigned ppn = ucg_builtin_calculate_ppx(group_params, UCG_GROUP_MEMBER_DISTANCE_HOST);
+    char is_socket_balance = (pps == (ppn - pps) || pps == ppn);
+    char result = is_socket_balance;
+    int status = ompi_coll_base_allreduce_intra_basic_linear(&is_socket_balance, &result, 1, MPI_CHAR, MPI_MIN,
+                                                             comm, &module->super);
+    if (status != OMPI_SUCCESS) {
+        int error = MPI_ERR_INTERN;
+        COLL_UCX_ERROR("ompi_coll_base_allreduce_intra_basic_linear failed");
+        ompi_mpi_errors_are_fatal_comm_handler(NULL, &error, "Failed to init is_socket_balance");
+    }
+    group_params->is_socket_balance = result;
+    return;
+}
+*/
+
+/* See prte_rmaps_base_print_mapping() for the string values */
+static char *distance_lookup[] = {
+        "none",
+        "hwthread",
+        "core",
+        "l1cache",
+        "l2cache",
+        "l3cache",
+        "package",
+        "numa",
+        "board",
+        "node",
+        NULL
+};
+
+static enum ucg_group_member_distance
+mca_common_ucx_get_pmix_distance(const char *pmix_key)
+{
+    int ret;
+    char *pmix_value;
+
+    opal_process_name_t wildcard = {
+            OMPI_PROC_MY_NAME->jobid,
+            OPAL_VPID_WILDCARD
+    };
+
+    OPAL_MODEX_RECV_VALUE_OPTIONAL(ret, pmix_key, &wildcard,
+                                   &pmix_value, PMIX_STRING);
+
+    if (ret) {
+        MCA_COMMON_UCX_WARN("Failed to obtain a value from PMIx: %s", pmix_key);
+        return UCG_GROUP_MEMBER_DISTANCE_UNKNOWN;
+    }
+
+    MCA_COMMON_UCX_VERBOSE(8, "PMIx translated key \"%s\" to value \"%s\"",
+                           pmix_key, pmix_value);
+
+    if (0 == strncasecmp(pmix_value, "by", 2)) {
+        pmix_value += 2;
+    }
+
+    enum ucg_group_member_distance iterator;
+    for (iterator = 0; distance_lookup[iterator]; iterator++) {
+        if (0 == strncasecmp(pmix_value, distance_lookup[iterator],
+                             strlen(distance_lookup[iterator]))) {
+            MCA_COMMON_UCX_VERBOSE(8, "UCX translated \"%s\" to distance %u",
+                                   pmix_key, iterator);
+            return iterator;
+        }
+    }
+
+    MCA_COMMON_UCX_VERBOSE(8, "UCX was unable to translate \"%s\"", pmix_key);
+
+    return UCG_GROUP_MEMBER_DISTANCE_UNKNOWN;
+}
+
+static enum ucg_group_member_distance mca_common_ucx_get_map_by(void)
+{
+    return mca_common_ucx_get_pmix_distance(PMIX_MAPBY);
+}
+
+static enum ucg_group_member_distance mca_common_ucx_get_rank_by(void)
+{
+    return mca_common_ucx_get_pmix_distance(PMIX_RANKBY);
+}
+
+static enum ucg_group_member_distance mca_common_ucx_get_bind_to(void)
+{
+    return mca_common_ucx_get_pmix_distance(PMIX_BINDTO);
+}
+#endif
+
 int mca_common_ucx_open(const char *prefix, size_t *request_size)
 {
     ucp_params_t ucp_params;
@@ -345,34 +477,35 @@ int mca_common_ucx_open(const char *prefix, size_t *request_size)
     ucp_params.tag_sender_mask   = MCA_COMMON_UCX_SPECIFIC_SOURCE_MASK;
     ucp_params.mt_workers_shared = 0; /* we do not need mt support for context
                                          since it will be protected by worker */
-    ucp_params.estimated_num_eps = ompi_process_info.myprocid.rank;
+    ucp_params.estimated_num_eps = ESTIMATED_ENDPOINT_COUNT;
 
 #ifdef HAVE_DECL_UCP_PARAM_FIELD_ESTIMATED_NUM_PPN
     ucp_params.estimated_num_ppn = opal_process_info.num_local_peers + 1;
     ucp_params.field_mask       |= UCP_PARAM_FIELD_ESTIMATED_NUM_PPN;
 #endif
 
-#ifdef HAVE_UCG
+#ifdef HAVE_DECL_UCP_FLAG_LOCAL_TLS_ONLY
+    if (ompi_process_info.num_local_peers == ompi_process_info.num_procs) {
+        ucp_params.field_mask   |= UCP_PARAM_FIELD_FLAGS;
+        ucp_params.flags         = UCP_FLAG_LOCAL_TLS_ONLY;
+    }
+#endif
+
+#if HAVE_UCG
     ucg_params_t ucg_params;
 
-    ucp_params.field_mask          |= UCP_PARAM_FIELD_GROUP_PEER_INFO;
-    ucp_params.features            |= UCP_FEATURE_GROUPS;
-    ucp_params.peer_info.num_local  = ompi_process_info.num_local_peers + 1;
-    ucp_params.peer_info.local_idx  = ompi_process_info.my_local_rank;
-    ucp_params.peer_info.num_global = ompi_process_info.num_procs;
-    ucp_params.peer_info.global_idx = ompi_process_info.myprocid.rank;
-
     /* Initialize UCG context parameters */
+    ucp_params.features                |= UCP_FEATURE_GROUPS;
     ucg_params.super                    = &ucp_params;
-    ucg_params.field_mask               = UCG_PARAM_FIELD_JOB_UID       |
-                                          UCG_PARAM_FIELD_ADDRESS_CB    |
+    ucg_params.field_mask               = UCG_PARAM_FIELD_ADDRESS_CB    |
                                           UCG_PARAM_FIELD_NEIGHBORS_CB  |
                                           UCG_PARAM_FIELD_DATATYPE_CB   |
                                           UCG_PARAM_FIELD_REDUCE_OP_CB  |
                                           UCG_PARAM_FIELD_COMPLETION_CB |
                                           UCG_PARAM_FIELD_MPI_IN_PLACE  |
-                                          UCG_PARAM_FIELD_HANDLE_FAULT;
-    ucg_params.job_uid                  = ompi_process_info.my_name.jobid;
+                                          UCG_PARAM_FIELD_HANDLE_FAULT  |
+                                          UCG_PARAM_FIELD_JOB_INFO      |
+                                          UCG_PARAM_FIELD_GLOBAL_INDEX;
     ucg_params.address.lookup_f         = (typeof(ucg_params.address.lookup_f))
                                           mca_common_ucx_resolve_address;
     ucg_params.address.release_f        = (typeof(ucg_params.address.release_f))
@@ -381,8 +514,10 @@ int mca_common_ucx_open(const char *prefix, size_t *request_size)
                                           mca_common_ucx_neighbors_count;
     ucg_params.neighbors.vertex_query_f = (typeof(ucg_params.neighbors.vertex_query_f))
                                           mca_common_ucx_neighbors_query;
-    ucg_params.datatype.convert         = (typeof(ucg_params.datatype.convert))
+    ucg_params.datatype.convert_f       = (typeof(ucg_params.datatype.convert_f))
                                           mca_common_ucx_datatype_convert;
+    ucg_params.datatype.get_span_f      = (typeof(ucg_params.datatype.get_span_f))
+                                          mca_common_ucx_datatype_get_span;
     ucg_params.datatype.is_integer_f    = (typeof(ucg_params.datatype.is_integer_f))
                                           mca_common_ucx_is_dtype_int;
     ucg_params.datatype.is_floating_point_f = (typeof(ucg_params.datatype.is_floating_point_f))
@@ -398,7 +533,16 @@ int mca_common_ucx_open(const char *prefix, size_t *request_size)
     ucg_params.completion.coll_comp_cb_f = (typeof(ucg_params.completion.coll_comp_cb_f))
                                            mca_common_ucx_collective_completion;
     ucg_params.mpi_in_place             = (void*)MPI_IN_PLACE;
+    ucg_params.get_global_index_f       = (typeof(ucg_params.get_global_index_f))
+                                          mca_coll_ucx_get_global_rank;
     ucg_params.fault.mode               = UCG_FAULT_IS_FATAL;
+    ucg_params.job_info.job_uid         = ompi_process_info.my_name.jobid;
+    ucg_params.job_info.step_idx        = 0; /* TODO: support steps, e.g. in SLURM*/
+    ucg_params.job_info.job_size        = ompi_process_info.num_procs;
+    ucg_params.job_info.map_by          = mca_common_ucx_get_map_by();
+    ucg_params.job_info.rank_by         = mca_common_ucx_get_rank_by();
+    ucg_params.job_info.bind_to         = mca_common_ucx_get_bind_to();
+    ucg_params.job_info.procs_per_host  = opal_process_info.num_local_peers + 1;
 
     return opal_common_ucx_open(prefix, &ucg_params,
 #else
