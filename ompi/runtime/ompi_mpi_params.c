@@ -94,6 +94,8 @@ static bool show_enviro_mca_params = false;
 static bool show_override_mca_params = false;
 bool ompi_mpi_oversubscribed = false;
 
+static int g_ompi_mpi_register_params_initialized = 0;
+
 #if OPAL_ENABLE_FT_MPI
 int ompi_ftmpi_output_handle = 0;
 bool ompi_ftmpi_enabled = false;
@@ -103,6 +105,12 @@ bool ompi_ftmpi_enabled = false;
 int ompi_mpi_register_params(void)
 {
     int value;
+
+    /* Don't reinitialize (Due to Score-P plugin) */
+    if (g_ompi_mpi_register_params_initialized) {
+       return OMPI_SUCCESS;
+    }
+    g_ompi_mpi_register_params_initialized = 1;
 
 #if OPAL_ENABLE_FT_MPI
     mca_base_var_scope_t ftscope = MCA_BASE_VAR_SCOPE_READONLY;
