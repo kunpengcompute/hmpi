@@ -49,6 +49,40 @@ BEGIN_C_DECLS
 typedef struct coll_ucx_persistent_op mca_coll_ucx_persistent_op_t;
 typedef struct coll_ucx_convertor     mca_coll_ucx_convertor_t;
 
+typedef enum {
+    COLL_UCX_TOPO_LEVEL_ROOT,
+    COLL_UCX_TOPO_LEVEL_NODE,
+    COLL_UCX_TOPO_LEVEL_SOCKET,
+    COLL_UCX_TOPO_LEVEL_L3CACHE,
+} coll_ucx_topo_level_t;
+
+typedef union coll_ucx_topo_tree {
+    struct {
+        int rank_nums;
+        int child_nums;
+        union coll_ucx_topo_tree *child;
+    } inter;
+    struct {
+        int rank_nums;
+        int rank_min;
+        int rank_max;
+    } leaf;
+} coll_ucx_topo_tree_t;
+
+typedef struct {
+    uint32_t node_id : 24;
+    uint32_t sock_id : 8;
+} rank_location_t;
+
+typedef struct {
+    int                   rank_nums;
+    int                   node_nums;
+    int                   sock_nums;
+    coll_ucx_topo_level_t level;
+    coll_ucx_topo_tree_t  tree;
+    rank_location_t      *locs;
+} coll_ucx_topo_info_t;
+
 typedef struct mca_coll_ucx_component {
     /* base MCA collectives component */
     mca_coll_base_component_t super;
@@ -57,7 +91,7 @@ typedef struct mca_coll_ucx_component {
     int                       priority;
     int                       verbose;
     int                       num_disconnect;
-    bool                      enable_topo_map;
+    int                       topo_aware_level;
 
     /* UCX global objects */
     ucp_context_h             ucp_context;
@@ -66,8 +100,7 @@ typedef struct mca_coll_ucx_component {
     ucg_group_h               ucg_group;
     int                       output;
     ucs_list_link_t           group_head;
-    char                      **topo_map;
-    unsigned                  world_member_count;
+    coll_ucx_topo_info_t      topo;
 
     /* Requests */
     mca_coll_ucx_freelist_t   persistent_ops;
@@ -85,6 +118,9 @@ OMPI_MODULE_DECLSPEC extern mca_coll_ucx_component_t mca_coll_ucx_component;
 
 typedef struct mca_coll_ucx_module {
     mca_coll_base_module_t super;
+
+    /* per-communicator topo info and op interface */
+    coll_ucx_topo_tree_t  *topo_tree;
 
     /* UCX per-communicator context */
     ucg_group_h            ucg_group;
