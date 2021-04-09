@@ -289,12 +289,6 @@ static int mca_coll_ucx_create_global_topo_map(mca_coll_ucx_module_t *module,
         goto err_free_locality;
     }
     memset(localities, 0, total_locality_size);
-    ret = ompi_coll_base_barrier_intra_basic_linear(MPI_COMM_WORLD, &module->super);
-    if (ret != OMPI_SUCCESS) {
-        int error = MPI_ERR_INTERN;
-        COLL_UCX_ERROR("ompi_coll_base_barrier_intra_basic_linear failed");
-        ompi_mpi_errors_are_fatal_comm_handler(NULL, &error, "Failed to init topo map");
-    }
     ret = ompi_coll_base_allgather_intra_bruck(locality, locality_size, MPI_CHAR,
                                                localities, one_locality_size, MPI_CHAR,
                                                MPI_COMM_WORLD, &module->super);
