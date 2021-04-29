@@ -72,6 +72,10 @@ base as of this writing (February 2019):
 
 General notes
 -------------
+- You are advised to use CCScheduler to invoke the mpirun command in
+  Hyper MPI. If you run the mpirun command directly after configuring
+  SSH password-free login in Linux, you are responsible for the security
+  risks caused by the SSH plaintext private key.
 
 - Open MPI now includes two public software layers: MPI and OpenSHMEM.
   Throughout this document, references to Open MPI implicitly include
