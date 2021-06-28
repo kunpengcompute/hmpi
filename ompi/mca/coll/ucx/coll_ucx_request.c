@@ -10,7 +10,7 @@
  *
  * $HEADER$
  */
-#include "ompi_config.h"
+
 #include <inttypes.h>
 #include "coll_ucx_request.h"
 #include "ompi/message/message.h"
@@ -30,7 +30,7 @@ static int mca_coll_ucx_request_free(ompi_request_t **rptr)
 
 static int mca_coll_ucx_request_cancel(ompi_request_t *req, int flag)
 {
-    ucg_request_cancel(mca_coll_ucx_component.ucg_group, req);
+    ucg_request_cancel(mca_coll_ucx_component.ucg_worker, req);
     return OMPI_SUCCESS;
 }
 
@@ -137,7 +137,7 @@ static int mca_coll_ucx_persistent_op_cancel(ompi_request_t *req, int flag)
     mca_coll_ucx_persistent_op_t* preq = (mca_coll_ucx_persistent_op_t*)req;
 
     if (preq->tmp_req != NULL) {
-        ucg_request_cancel(preq->ucg_group, preq->tmp_req);
+        ucg_request_cancel(preq->ucg_worker, preq->tmp_req);
     }
     return OMPI_SUCCESS;
 }

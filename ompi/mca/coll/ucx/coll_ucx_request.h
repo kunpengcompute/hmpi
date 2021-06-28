@@ -26,7 +26,7 @@ struct coll_ucx_persistent_op {
     ompi_request_t  ompi;
     ompi_request_t *tmp_req;
     ucg_coll_h      coll_desc;
-    ucg_group_h     ucg_group;
+    ucg_worker_h    ucg_worker;
     unsigned        flags;
 };
 

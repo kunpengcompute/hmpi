@@ -174,7 +174,7 @@ int mca_coll_ucx_allreduce(const void *sbuf, void *rbuf, int count,
         goto exit;
     }
 
-    ucp_worker_h ucp_worker = mca_coll_ucx_component.ucp_worker;
+    ucp_worker_h ucp_worker = mca_coll_ucx_component.ucg_worker;
     MCA_COMMON_UCX_WAIT_LOOP(req, OPAL_COMMON_UCX_REQUEST_TYPE_UCG, ucp_worker, "ucx allreduce", (void)0);
     COLL_UCX_TRACE("%s", sbuf, rbuf, count, dtype, comm, "allreduce END");
 
@@ -290,7 +290,7 @@ int mca_coll_ucx_reduce(const void *sbuf, void* rbuf, int count,
         return OMPI_SUCCESS;
     }
 
-    ucp_worker_h ucp_worker = mca_coll_ucx_component.ucp_worker;
+    ucp_worker_h ucp_worker = mca_coll_ucx_component.ucg_worker;
     MCA_COMMON_UCX_WAIT_LOOP(req, OPAL_COMMON_UCX_REQUEST_TYPE_UCG, ucp_worker, "ucx reduce", (void)0);
 }
 
@@ -327,7 +327,7 @@ int mca_coll_ucx_scatter(const void *sbuf, int scount, struct ompi_datatype_t *s
         return OMPI_SUCCESS;
     }
 
-    ucp_worker_h ucp_worker = mca_coll_ucx_component.ucp_worker;
+    ucp_worker_h ucp_worker = mca_coll_ucx_component.ucg_worker;
     MCA_COMMON_UCX_WAIT_LOOP(req, OPAL_COMMON_UCX_REQUEST_TYPE_UCG, ucp_worker, "ucx scatter", (void)0);
 }
 
@@ -364,7 +364,7 @@ int mca_coll_ucx_gather(const void *sbuf, int scount, struct ompi_datatype_t *sd
         return OMPI_SUCCESS;
     }
 
-    ucp_worker_h ucp_worker = mca_coll_ucx_component.ucp_worker;
+    ucp_worker_h ucp_worker = mca_coll_ucx_component.ucg_worker;
     MCA_COMMON_UCX_WAIT_LOOP(req, OPAL_COMMON_UCX_REQUEST_TYPE_UCG, ucp_worker, "ucx gather", (void)0);
 }
 
@@ -401,7 +401,7 @@ int mca_coll_ucx_allgather(const void *sbuf, int scount, struct ompi_datatype_t 
         return OMPI_SUCCESS;
     }
 
-    ucp_worker_h ucp_worker = mca_coll_ucx_component.ucp_worker;
+    ucp_worker_h ucp_worker = mca_coll_ucx_component.ucg_worker;
     MCA_COMMON_UCX_WAIT_LOOP(req, OPAL_COMMON_UCX_REQUEST_TYPE_UCG, ucp_worker, "ucx allgather", (void)0);
 }
 
@@ -438,7 +438,7 @@ int mca_coll_ucx_alltoall(const void *sbuf, int scount, struct ompi_datatype_t *
         return OMPI_SUCCESS;
     }
 
-    ucp_worker_h ucp_worker = mca_coll_ucx_component.ucp_worker;
+    ucp_worker_h ucp_worker = mca_coll_ucx_component.ucg_worker;
     MCA_COMMON_UCX_WAIT_LOOP(req, OPAL_COMMON_UCX_REQUEST_TYPE_UCG, ucp_worker, "ucx alltoall", (void)0);
 }
 
@@ -465,7 +465,7 @@ int mca_coll_ucx_barrier(struct ompi_communicator_t *comm, mca_coll_base_module_
         return OMPI_SUCCESS;
     }
 
-    ucp_worker_h ucp_worker = mca_coll_ucx_component.ucp_worker;
+    ucp_worker_h ucp_worker = mca_coll_ucx_component.ucg_worker;
     MCA_COMMON_UCX_WAIT_LOOP(req, OPAL_COMMON_UCX_REQUEST_TYPE_UCG, ucp_worker, "ucx barrier", (void)0);
 }
 
@@ -502,6 +502,6 @@ int mca_coll_ucx_bcast(void *buff, int count, struct ompi_datatype_t *dtype, int
         return OMPI_SUCCESS;
     }
 
-    ucp_worker_h ucp_worker = mca_coll_ucx_component.ucp_worker;
+    ucp_worker_h ucp_worker = mca_coll_ucx_component.ucg_worker;
     MCA_COMMON_UCX_WAIT_LOOP(req, OPAL_COMMON_UCX_REQUEST_TYPE_UCG, ucp_worker, "ucx bcast", (void)0);
 }
