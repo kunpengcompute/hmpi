@@ -28,8 +28,7 @@
 #include <string.h>
 #include <arpa/inet.h>
 
-static int mca_coll_ucx_obtain_addr_from_hostname(const char *hostname,
-                                                  struct in_addr *ip_addr)
+static int mca_coll_ucg_obtain_addr_from_hostname(const char *hostname, struct in_addr *ip_addr)
 {
     struct addrinfo hints;
     struct addrinfo *res = NULL, *cur = NULL;
@@ -55,152 +54,89 @@ static int mca_coll_ucx_obtain_addr_from_hostname(const char *hostname,
     return OMPI_SUCCESS;
 }
 
-static uint16_t* mca_coll_ucx_obtain_node_index(struct ompi_communicator_t *comm)
+static int mca_coll_ucg_obtain_node_index(unsigned member_count, struct ompi_communicator_t *comm, uint16_t *node_index)
 {
-    int status;
-    unsigned member_count = ompi_comm_size(comm);
-    uint16_t* node_idx = malloc(sizeof(uint16_t) * member_count);
-    if (node_idx == NULL) {
-        return NULL;
-    }
-    uint16_t invalid_node_idx = (uint16_t)-1;
-    for (unsigned i = 0; i < member_count; ++i) {
-        node_idx[i] = invalid_node_idx;
-    }
+    ucg_group_member_index_t rank_idx, rank2_idx;
+    uint16_t same_node_flag;
+    uint16_t node_idx = 0;
+    uint16_t init_node_idx = (uint16_t) - 1;
+    int  status, status2;
+    struct in_addr ip_address, ip_address2;
 
-    /* get ip address */
-    struct in_addr *ip_address = malloc(sizeof(struct in_addr) * member_count);
-    if (ip_address == NULL) {
-        goto err_free_node_idx;
+    /* initialize: -1: unnumbering flag */
+    for (rank_idx = 0; rank_idx < member_count; rank_idx++) {
+        node_index[rank_idx] = init_node_idx;
     }
-    for (unsigned i = 0; i < member_count; ++i) {
-        ompi_proc_t *rank = ompi_comm_peer_lookup(comm, i);
-        status = mca_coll_ucx_obtain_addr_from_hostname(rank->super.proc_hostname,
-                                                        ip_address + i);
-        if (status != OMPI_SUCCESS) {
-            goto err_free_ip_addr;
-        }
-    }
+    
+    for (rank_idx = 0; rank_idx < member_count; rank_idx++) {
+        if (node_index[rank_idx] == init_node_idx) {
+            struct ompi_proc_t *rank_iter = 
+                    (struct ompi_proc_t*)ompi_comm_peer_lookup(comm, rank_idx);
+            /* super.proc_hostname give IP address or real hostname */
+            /* transform  hostname to IP address for uniform format */
+            status = mca_coll_ucg_obtain_addr_from_hostname(rank_iter->super.proc_hostname, &ip_address);
+            for (rank2_idx = rank_idx; rank2_idx < member_count; rank2_idx++) {
+                struct ompi_proc_t *rank2_iter = 
+                    (struct ompi_proc_t*)ompi_comm_peer_lookup(comm, rank2_idx);
+                
+                status2 = mca_coll_ucg_obtain_addr_from_hostname(rank2_iter->super.proc_hostname, &ip_address2);
+                if (status != OMPI_SUCCESS || status2 != OMPI_SUCCESS) {
+                    return OMPI_ERROR;
+                }
 
-    /* assign node index, starts from 0 */
-    uint16_t last_node_idx = 0;
-    for (unsigned i = 0; i < member_count; ++i) {
-        if (node_idx[i] == invalid_node_idx) {
-            node_idx[i] = last_node_idx;
-            /* find the node with same ipaddr, assign the same node idx */
-            for (unsigned j = i + 1; j < member_count; ++j) {
-                if (memcmp(&ip_address[i], &ip_address[j], sizeof(struct in_addr)) == 0) {
-                    node_idx[j] = last_node_idx;
+                /* if rank_idx and rank2_idx in same node, same_flag = 1 */
+                same_node_flag = (memcmp(&ip_address, &ip_address2, sizeof(ip_address))) ? 0 : 1;
+                if (same_node_flag == 1 && node_index[rank2_idx] == init_node_idx) {
+                    node_index[rank2_idx] = node_idx;
                 }
             }
-            ++last_node_idx;
+            node_idx++;
         }
     }
-    free(ip_address);
-    return node_idx;
-
-err_free_ip_addr:
-    free(ip_address);
-err_free_node_idx:
-    free(node_idx);
-    return NULL;
-}
-
-static enum ucg_group_member_distance* mca_coll_ucx_obtain_distance(struct ompi_communicator_t *comm)
-{
-    int my_idx = ompi_comm_rank(comm);
-    int member_cnt = ompi_comm_size(comm);
-    enum ucg_group_member_distance *distance = malloc(member_cnt * sizeof(enum ucg_group_member_distance));
-    if (distance == NULL) {
-        return NULL;
-    }
-
-    struct ompi_proc_t *rank_iter;
-    for (int rank_idx = 0; rank_idx < member_cnt; ++rank_idx) {
-        rank_iter = ompi_comm_peer_lookup(comm, rank_idx);
-        rank_iter->proc_endpoints[OMPI_PROC_ENDPOINT_TAG_COLL] = NULL;
-        if (rank_idx == my_idx) {
-            distance[rank_idx] = UCG_GROUP_MEMBER_DISTANCE_SELF;
-        } else if (OPAL_PROC_ON_LOCAL_L3CACHE(rank_iter->super.proc_flags)) {
-            distance[rank_idx] = UCG_GROUP_MEMBER_DISTANCE_L3CACHE;
-        } else if (OPAL_PROC_ON_LOCAL_SOCKET(rank_iter->super.proc_flags)) {
-            distance[rank_idx] = UCG_GROUP_MEMBER_DISTANCE_SOCKET;
-        } else if (OPAL_PROC_ON_LOCAL_HOST(rank_iter->super.proc_flags)) {
-            distance[rank_idx] = UCG_GROUP_MEMBER_DISTANCE_HOST;
-        } else {
-            distance[rank_idx] = UCG_GROUP_MEMBER_DISTANCE_NET;
+    
+    /* make sure every rank has its node_index */
+    for (rank_idx = 0; rank_idx < member_count; rank_idx++) {
+        /* some rank do NOT have node_index */
+        if (node_index[rank_idx] == init_node_idx) {
+            return OMPI_ERROR;
         }
     }
-    return distance;
+    return OMPI_SUCCESS;
 }
 
-static void mca_coll_ucx_deallocate_topo_map(char **topo_map, unsigned member_count)
+static int mca_coll_ucx_create_topo_map(const uint16_t *node_index, const char *topo_info, unsigned loc_size, unsigned rank_cnt)
 {
-    if (topo_map == NULL) {
-        return;
-    }
-    for (unsigned i = 0; i < member_count; ++i) {
-        if (topo_map[i] == NULL) {
-            /* The following are NULL too, so break */
-            break;
-        }
-        free(topo_map[i]);
-        topo_map[i] = NULL;
-    }
-    free(topo_map);
-    topo_map = NULL;
-    return;
-}
-
-static char** mca_coll_ucx_allocate_topo_map(unsigned member_count)
-{
-    char **topo_map = malloc(sizeof(char*) * member_count);
-    if (topo_map == NULL) {
-        return NULL;
-    }
-    memset(topo_map, 0, sizeof(char*) * member_count);
-
-    for (unsigned i = 0; i < member_count; ++i) {
-        topo_map[i] = malloc(sizeof(char) * member_count);
-        if (topo_map[i] == NULL) {
-            goto err;
-        }
-    }
-
-    return topo_map;
-err:
-    mca_coll_ucx_deallocate_topo_map(topo_map, member_count);
-    return NULL;
-}
-
-static char** mca_coll_ucx_create_topo_map(const uint16_t *node_index,
-                                           char *localities,
-                                           unsigned loc_size,
-                                           unsigned member_count)
-{
-    char **topo_map = mca_coll_ucx_allocate_topo_map(member_count);
-    if (topo_map == NULL) {
-        return NULL;
+    mca_coll_ucx_component.topo_map = (char**)malloc(sizeof(char*) * rank_cnt);
+    if (mca_coll_ucx_component.topo_map == NULL) {
+        return OMPI_ERROR;
     }
 
     unsigned i, j;
-    enum ucg_group_member_distance distance;
-    opal_hwloc_locality_t rel_loc;
-    for (i = 0; i < member_count; ++i) {
+    for (i = 0; i < rank_cnt; i++) {
+        mca_coll_ucx_component.topo_map[i] = (char*)malloc(sizeof(char) * rank_cnt);
+        if (mca_coll_ucx_component.topo_map[i] == NULL) {
+            for (j = 0; j < i; j++) {
+                free(mca_coll_ucx_component.topo_map[j]);
+                mca_coll_ucx_component.topo_map[j] = NULL;
+            }
+            free(mca_coll_ucx_component.topo_map);
+            mca_coll_ucx_component.topo_map = NULL;
+            return OMPI_ERROR;
+        }
         for (j = 0; j <= i; j++) {
             if (i == j) {
-                topo_map[i][j] = (char)UCG_GROUP_MEMBER_DISTANCE_SELF;
+                mca_coll_ucx_component.topo_map[i][j] = (char)UCG_GROUP_MEMBER_DISTANCE_SELF;
                 continue;
             }
 
             if (node_index[i] != node_index[j]) {
-                topo_map[i][j] = (char)UCG_GROUP_MEMBER_DISTANCE_NET;
-                topo_map[j][i] = (char)UCG_GROUP_MEMBER_DISTANCE_NET;
+                mca_coll_ucx_component.topo_map[i][j] = (char)UCG_GROUP_MEMBER_DISTANCE_NET;
+                mca_coll_ucx_component.topo_map[j][i] = (char)UCG_GROUP_MEMBER_DISTANCE_NET;
                 continue;
             }
 
-            rel_loc = opal_hwloc_compute_relative_locality(localities + i * loc_size,
-                                                           localities + j * loc_size);
+            opal_hwloc_locality_t rel_loc = opal_hwloc_compute_relative_locality(topo_info + i * loc_size, topo_info + j * loc_size);
+            enum ucg_group_member_distance distance;
             if (OPAL_PROC_ON_LOCAL_L3CACHE(rel_loc)) {
                 distance = UCG_GROUP_MEMBER_DISTANCE_L3CACHE;
             } else if (OPAL_PROC_ON_LOCAL_SOCKET(rel_loc)) {
@@ -210,11 +146,11 @@ static char** mca_coll_ucx_create_topo_map(const uint16_t *node_index,
             } else {
                 distance = UCG_GROUP_MEMBER_DISTANCE_NET;
             }
-            topo_map[i][j] = (char)distance;
-            topo_map[j][i] = (char)distance;
+            mca_coll_ucx_component.topo_map[i][j] = (char)distance;
+            mca_coll_ucx_component.topo_map[j][i] = (char)distance;
         }
     }
-    return topo_map;
+    return OMPI_SUCCESS;
 }
 
 static int mca_coll_ucx_print_topo_map(unsigned rank_cnt, char **topo_map)
@@ -242,146 +178,215 @@ static int mca_coll_ucx_print_topo_map(unsigned rank_cnt, char **topo_map)
     return status;
 }
 
-static int mca_coll_ucx_convert_to_global_rank(struct ompi_communicator_t *comm, int rank)
-{
-    struct ompi_proc_t *proc = ompi_comm_peer_lookup(comm, rank);
-    if (proc == NULL) {
-        return -1;
-    }
-
-    unsigned i;
-    unsigned member_count = ompi_comm_size(MPI_COMM_WORLD);
-    for (i = 0; i < member_count; ++i) {
-        struct ompi_proc_t *global_proc = ompi_comm_peer_lookup(MPI_COMM_WORLD, i);
-        if (global_proc == proc) {
-            return i;
-        }
-    }
-
-    return -1;
-}
-
-static int mca_coll_ucx_create_global_topo_map(mca_coll_ucx_module_t *module,
-                                               struct ompi_communicator_t *comm)
+static int mca_coll_ucx_init_global_topo(mca_coll_ucx_module_t *module)
 {
     if (mca_coll_ucx_component.topo_map != NULL) {
         return OMPI_SUCCESS;
     }
-    /* get my locality string */
-    int ret;
-    char *locality = NULL;
-    OPAL_MODEX_RECV_VALUE_OPTIONAL(ret, OPAL_PMIX_LOCALITY_STRING,
-                                   &opal_proc_local_get()->proc_name, &locality, OPAL_STRING);
-    if (locality == NULL || ret != OMPI_SUCCESS) {
-        free(locality);
-        return OMPI_ERROR;
-    }
-    int locality_size = strlen(locality);
 
-    /* gather all members locality */
-    int member_count = ompi_comm_size(comm);
-    COLL_UCX_ASSERT(locality_size <= 64);
-    unsigned one_locality_size = 64 * sizeof(char);
-    unsigned total_locality_size = one_locality_size * member_count;
-    char *localities = (char*)malloc(total_locality_size);
-    if (localities == NULL) {
-        ret = OMPI_ERROR;
-        goto err_free_locality;
+    /* Derive the 'loc' string from pmix and gather all 'loc' string from all the ranks in the world. */
+    int status = OMPI_SUCCESS;
+    uint16_t *node_index = NULL;
+    unsigned LOC_SIZE = 64;
+    unsigned rank_cnt = mca_coll_ucx_component.world_member_count = ompi_comm_size(MPI_COMM_WORLD);
+    char *topo_info = (char*)malloc(sizeof(char) * LOC_SIZE * rank_cnt);
+    if (topo_info == NULL) {
+        status = OMPI_ERROR;
+        goto end;
     }
-    memset(localities, 0, total_locality_size);
-    ret = ompi_coll_base_allgather_intra_bruck(locality, locality_size, MPI_CHAR,
-                                               localities, one_locality_size, MPI_CHAR,
-                                               MPI_COMM_WORLD, &module->super);
+    memset(topo_info, 0, sizeof(char) * LOC_SIZE * rank_cnt);
+    int ret;
+    char *val = NULL;
+    OPAL_MODEX_RECV_VALUE_OPTIONAL(ret, OPAL_PMIX_LOCALITY_STRING,
+                                   &opal_proc_local_get()->proc_name, &val, OPAL_STRING);
+    if (val == NULL || ret != OMPI_SUCCESS) {
+        status = OMPI_ERROR;
+        goto end;
+    }
+
+    ret = ompi_coll_base_allgather_intra_bruck(val, LOC_SIZE, MPI_CHAR, topo_info, LOC_SIZE, MPI_CHAR, MPI_COMM_WORLD, &module->super);
     if (ret != OMPI_SUCCESS) {
         int err = MPI_ERR_INTERN;
         COLL_UCX_ERROR("ompi_coll_base_allgather_intra_bruck failed");
         ompi_mpi_errors_are_fatal_comm_handler(NULL, &err, "Failed to init topo map");
     }
-    /* get node index */
-    uint16_t* node_idx = mca_coll_ucx_obtain_node_index(comm);
-    if (node_idx == NULL) {
-        ret = OMPI_ERROR;
-        goto err_free_localities;
+
+    /* Obtain node index to indicate each 'loc' belongs to which node,
+       as 'loc' only has info of local machine and contains no network info. */
+    node_index = (uint16_t*)malloc(rank_cnt * sizeof(uint16_t));
+    if (node_index == NULL) {
+        status = OMPI_ERROR;
+        goto end;
     }
 
-    /* create topology map */
-    char **topo_map = mca_coll_ucx_create_topo_map(node_idx,
-                                                   localities,
-                                                   one_locality_size,
-                                                   member_count);
-    if (topo_map == NULL) {
-        ret = OMPI_ERROR;
-        goto err_free_node_idx;
+    ret = mca_coll_ucg_obtain_node_index(rank_cnt, MPI_COMM_WORLD, node_index);
+    if (ret != OMPI_SUCCESS) {
+        status = OMPI_ERROR;
+        goto end;
     }
 
-    /* save to global variable */
-    mca_coll_ucx_component.topo_map = topo_map;
-    mca_coll_ucx_component.world_member_count = member_count;
-    ret = OMPI_SUCCESS;
+    /* Create a topo matrix. As it is Diagonal symmetry, only half of the matrix will be computed. */
+    ret = mca_coll_ucx_create_topo_map(node_index, topo_info, LOC_SIZE, rank_cnt);
+    if (ret != OMPI_SUCCESS) {
+        status = OMPI_ERROR;
+        goto end;
+    }
 
-err_free_node_idx:
-    free(node_idx);
-err_free_localities:
-    free(localities);
-err_free_locality:
-    free(locality);
+    ret = mca_coll_ucx_print_topo_map(rank_cnt, mca_coll_ucx_component.topo_map);
+    if (ret != OMPI_SUCCESS) {
+        status = OMPI_ERROR;
+    }
 
-    return ret;
+end:
+    if (val) {
+        free(val);
+        val = NULL;
+    }
+
+    if (node_index) {
+        free(node_index);
+        node_index = NULL;
+    }
+    if (topo_info) {
+        free(topo_info);
+        topo_info = NULL;
+    }
+    return status;
 }
 
-static char** mca_coll_ucx_obtain_topo_map(mca_coll_ucx_module_t *module,
-                                           struct ompi_communicator_t *comm)
+static int mca_coll_ucx_find_rank_in_comm_world(struct ompi_communicator_t *comm, int comm_rank)
 {
-    if (mca_coll_ucx_component.topo_map == NULL) {
-        /* global topo map is always needed. */
-        if (OMPI_SUCCESS != mca_coll_ucx_create_global_topo_map(module, comm)) {
-            return NULL;
-        }
+    struct ompi_proc_t *proc = (struct ompi_proc_t*)ompi_comm_peer_lookup(comm, comm_rank);
+    if (proc == NULL) {
+        return -1;
     }
 
+    unsigned i;
+    for (i = 0; i < ompi_comm_size(MPI_COMM_WORLD); i++) {
+        struct ompi_proc_t *rank_iter = (struct ompi_proc_t*)ompi_comm_peer_lookup(MPI_COMM_WORLD, i);
+        if (rank_iter == proc) {
+            return i;
+        }
+    }
+    
+    return -1;
+}
+
+static int mca_coll_ucx_create_comm_topo(ucg_group_params_t *args, struct ompi_communicator_t *comm)
+{
+    int status;
     if (comm == MPI_COMM_WORLD) {
-        return mca_coll_ucx_component.topo_map;
+        if (args->topo_map != NULL) {
+            free(args->topo_map);
+        }
+        args->topo_map = mca_coll_ucx_component.topo_map;
+        return OMPI_SUCCESS;
     }
 
-    unsigned member_count = ompi_comm_size(comm);
-    char **topo_map = mca_coll_ucx_allocate_topo_map(member_count);
-    if (topo_map == NULL) {
-        return NULL;
-    }
-    /* Create a topo matrix. As it is Diagonal symmetry， only half of the matrix will be computed. */
-    for (unsigned i = 0; i < member_count; ++i) {
+    /* Create a topo matrix. As it is Diagonal symmetry, only half of the matrix will be computed. */
+    unsigned i;
+    for (i = 0; i < args->member_count; i++) {
         /* Find the rank in the MPI_COMM_WORLD for rank i in the comm. */
-        int i_global_rank = mca_coll_ucx_convert_to_global_rank(comm, i);
-        if (i_global_rank == -1) {
-            goto err_free_topo_map;
+        int world_rank_i = mca_coll_ucx_find_rank_in_comm_world(comm, i);
+        if (world_rank_i == -1) {
+            return OMPI_ERROR;
         }
-        for (unsigned j = 0; j <= i; ++j) {
-            int j_global_rank = mca_coll_ucx_convert_to_global_rank(comm, j);
-            if (j_global_rank == -1) {
-                goto err_free_topo_map;
+        for (unsigned j = 0; j <= i; j++) {
+            int world_rank_j = mca_coll_ucx_find_rank_in_comm_world(comm, j);
+            if (world_rank_j == -1) {
+                return OMPI_ERROR;
             }
-            topo_map[i][j] = mca_coll_ucx_component.topo_map[i_global_rank][j_global_rank];
-            topo_map[j][i] = mca_coll_ucx_component.topo_map[j_global_rank][i_global_rank];
+            args->topo_map[i][j] = mca_coll_ucx_component.topo_map[world_rank_i][world_rank_j];
+            args->topo_map[j][i] = mca_coll_ucx_component.topo_map[world_rank_j][world_rank_i];
         }
     }
 
-    mca_coll_ucx_print_topo_map(member_count, topo_map);
-
-    return topo_map;
-
-err_free_topo_map:
-    mca_coll_ucx_deallocate_topo_map(topo_map, member_count);
-    return NULL;
+    status = mca_coll_ucx_print_topo_map(args->member_count, args->topo_map);
+    return status;
 }
 
-static void mca_coll_ucx_free_topo_map(char **topo_map, unsigned member_count)
+static void mca_coll_ucg_create_distance_array(struct ompi_communicator_t *comm, ucg_group_member_index_t my_idx, ucg_group_params_t *args)
 {
-    /* mca_coll_ucx_component.topo_map will be freed in mca_coll_ucx_module_destruct() */
-    if (topo_map != mca_coll_ucx_component.topo_map) {
-        mca_coll_ucx_deallocate_topo_map(topo_map, member_count);
+    ucg_group_member_index_t rank_idx;
+    for (rank_idx = 0; rank_idx < args->member_count; rank_idx++) {
+        struct ompi_proc_t *rank_iter = (struct ompi_proc_t*)ompi_comm_peer_lookup(comm, rank_idx);
+        rank_iter->proc_endpoints[OMPI_PROC_ENDPOINT_TAG_COLL] = NULL;
+        if (rank_idx == my_idx) {
+            args->distance[rank_idx] = UCG_GROUP_MEMBER_DISTANCE_SELF;
+        } else if (OPAL_PROC_ON_LOCAL_L3CACHE(rank_iter->super.proc_flags)) {
+            args->distance[rank_idx] = UCG_GROUP_MEMBER_DISTANCE_L3CACHE;
+        } else if (OPAL_PROC_ON_LOCAL_SOCKET(rank_iter->super.proc_flags)) {
+            args->distance[rank_idx] = UCG_GROUP_MEMBER_DISTANCE_SOCKET;
+        } else if (OPAL_PROC_ON_LOCAL_HOST(rank_iter->super.proc_flags)) {
+            args->distance[rank_idx] = UCG_GROUP_MEMBER_DISTANCE_HOST;
+        } else {
+            args->distance[rank_idx] = UCG_GROUP_MEMBER_DISTANCE_NET;
+        }
+    }
+}
+
+static int mca_coll_ucg_datatype_convert(ompi_datatype_t *mpi_dt,
+                                         ucp_datatype_t *ucp_dt)
+{
+    *ucp_dt = mca_coll_ucx_get_datatype(mpi_dt);
+    return 0;
+}
+
+static ptrdiff_t coll_ucx_datatype_span(void *dt_ext, int count, ptrdiff_t *gap)
+{
+    struct ompi_datatype_t *dtype = (struct ompi_datatype_t *)dt_ext;
+    ptrdiff_t dsize, gp= 0;
+
+    dsize = opal_datatype_span(&dtype->super, count, &gp);
+    *gap = gp;
+    return dsize;
+}
+
+static ucg_group_member_index_t mca_coll_ucx_get_global_member_idx(void *cb_group_obj,
+                                                                   ucg_group_member_index_t index)
+{
+    ompi_communicator_t* comm = (ompi_communicator_t*)cb_group_obj;
+    return (ucg_group_member_index_t)mca_coll_ucx_find_rank_in_comm_world(comm, (int)index);
+}
+
+static void mca_coll_ucg_init_group_param(struct ompi_communicator_t *comm, ucg_group_params_t *args)
+{
+    args->member_count      = ompi_comm_size(comm);
+    args->cid               = ompi_comm_get_cid(comm);
+    args->mpi_reduce_f      = ompi_op_reduce;
+    args->resolve_address_f = mca_coll_ucx_resolve_address;
+    args->release_address_f = mca_coll_ucx_release_address;
+    args->cb_group_obj      = comm;
+    args->op_is_commute_f   = ompi_op_is_commute;
+    args->mpi_dt_convert    = mca_coll_ucg_datatype_convert;
+    args->mpi_datatype_span = coll_ucx_datatype_span;
+    args->mpi_global_idx_f  = mca_coll_ucx_get_global_member_idx;
+}
+
+static void mca_coll_ucg_arg_free(struct ompi_communicator_t *comm, ucg_group_params_t *args)
+{
+    unsigned i;
+
+    if (args->distance != NULL) {
+        free(args->distance);
+        args->distance = NULL;
     }
 
-    return;
+    if (args->node_index != NULL) {
+        free(args->node_index);
+        args->node_index = NULL;
+    }
+
+    if (comm != MPI_COMM_WORLD && args->topo_map != NULL) {
+        for (i = 0; i < args->member_count; i++) {
+            if (args->topo_map[i] != NULL) {
+                free(args->topo_map[i]);
+                args->topo_map[i] = NULL;
+            }
+        }
+        free(args->topo_map);
+        args->topo_map = NULL;
+    }
 }
 
 static void mca_coll_ucg_init_is_socket_balance(ucg_group_params_t *group_params, mca_coll_ucx_module_t *module,
@@ -391,14 +396,8 @@ static void mca_coll_ucg_init_is_socket_balance(ucg_group_params_t *group_params
     unsigned ppn = ucg_builtin_calculate_ppx(group_params, UCG_GROUP_MEMBER_DISTANCE_HOST);
     char is_socket_balance = (pps == (ppn - pps) || pps == ppn);
     char result = is_socket_balance;
-    int status = ompi_coll_base_barrier_intra_basic_linear(comm, &module->super);
-    if (status != OMPI_SUCCESS) {
-        int error = MPI_ERR_INTERN;
-        COLL_UCX_ERROR("ompi_coll_base_barrier_intra_basic_linear failed");
-        ompi_mpi_errors_are_fatal_comm_handler(NULL, &error, "Failed to init is_socket_balance");
-    }
-    status = ompi_coll_base_allreduce_intra_basic_linear(&is_socket_balance, &result, 1, MPI_CHAR, MPI_MIN,
-                                                         comm, &module->super);
+    int status = ompi_coll_base_allreduce_intra_basic_linear(&is_socket_balance, &result, 1, MPI_CHAR, MPI_MIN,
+                                                             comm, &module->super);
     if (status != OMPI_SUCCESS) {
         int error = MPI_ERR_INTERN;
         COLL_UCX_ERROR("ompi_coll_base_allreduce_intra_basic_linear failed");
@@ -408,93 +407,95 @@ static void mca_coll_ucg_init_is_socket_balance(ucg_group_params_t *group_params
     return;
 }
 
-static int mca_coll_ucx_init_ucg_group_params(mca_coll_ucx_module_t *module,
-                                              struct ompi_communicator_t *comm,
-                                              ucg_group_params_t *params)
-{
-    memset(params, 0, sizeof(*params));
-    uint16_t binding_policy = OPAL_GET_BINDING_POLICY(opal_hwloc_binding_policy);
-    params->field_mask = UCG_GROUP_PARAM_FIELD_UCP_WORKER |
-                         UCG_GROUP_PARAM_FIELD_ID |
-                         UCG_GROUP_PARAM_FIELD_MEMBER_COUNT |
-                         UCG_GROUP_PARAM_FIELD_DISTANCE |
-                         UCG_GROUP_PARAM_FIELD_NODE_INDEX |
-                         UCG_GROUP_PARAM_FIELD_BIND_TO_NONE |
-                         UCG_GROUP_PARAM_FIELD_CB_GROUP_IBJ |
-                         UCG_GROUP_PARAM_FIELD_IS_SOCKET_BALANCE;
-    params->ucp_worker = mca_coll_ucx_component.ucp_worker;
-    params->group_id = ompi_comm_get_cid(comm);
-    params->member_count = ompi_comm_size(comm);
-    params->distance = mca_coll_ucx_obtain_distance(comm);
-    if (params->distance == NULL) {
-        return OMPI_ERROR;
-    }
-    params->node_index = mca_coll_ucx_obtain_node_index(comm);
-    if (params->node_index == NULL) {
-        goto err_free_distane;
-    }
-    params->is_bind_to_none   = binding_policy == OPAL_BIND_TO_NONE;
-    params->cb_group_obj      = comm;
-    mca_coll_ucg_init_is_socket_balance(params, module, comm);
-    if (mca_coll_ucx_component.enable_topo_map && binding_policy == OPAL_BIND_TO_CORE) {
-        params->field_mask |= UCG_GROUP_PARAM_FIELD_TOPO_MAP;
-        params->topo_map = mca_coll_ucx_obtain_topo_map(module, comm);
-        if (params->topo_map == NULL) {
-            goto err_node_idx;
-        }
-    }
-    return OMPI_SUCCESS;
-err_node_idx:
-    free(params->node_index);
-    params->node_index = NULL;
-err_free_distane:
-    free(params->distance);
-    params->distance = NULL;
-    return OMPI_ERROR;
-}
-
-static void mca_coll_ucx_cleanup_group_params(ucg_group_params_t *params)
-{
-    if (params->topo_map != NULL) {
-        mca_coll_ucx_free_topo_map(params->topo_map, params->member_count);
-        params->topo_map = NULL;
-    }
-    if (params->node_index != NULL) {
-        free(params->node_index);
-        params->node_index = NULL;
-    }
-    if (params->distance != NULL) {
-        free(params->distance);
-        params->distance = NULL;
-    }
-    return;
-}
-
 static int mca_coll_ucg_create(mca_coll_ucx_module_t *module, struct ompi_communicator_t *comm)
 {
+    ucs_status_t error;
+    ucg_group_params_t args;
+    ucg_group_member_index_t my_idx;
+    int status = OMPI_SUCCESS;
+    unsigned i;
+
 #if OMPI_GROUP_SPARSE
     COLL_UCX_ERROR("Sparse process groups are not supported");
     return UCS_ERR_UNSUPPORTED;
 #endif
-    ucg_group_params_t params;
-    if (OMPI_SUCCESS != mca_coll_ucx_init_ucg_group_params(module, comm, &params)) {
-        return OMPI_ERROR;
+
+    /* Fill in group initialization parameters */
+    my_idx                 = ompi_comm_rank(comm);
+    mca_coll_ucg_init_group_param(comm, &args);
+    args.distance          = malloc(args.member_count * sizeof(*args.distance));
+    args.node_index        = malloc(args.member_count * sizeof(*args.node_index));
+    args.is_bind_to_none   = (OPAL_BIND_TO_NONE == OPAL_GET_BINDING_POLICY(opal_hwloc_binding_policy));
+    args.topo_map          = NULL;
+    
+    if (args.distance == NULL || args.node_index == NULL) {
+        MCA_COMMON_UCX_WARN("Failed to allocate memory for %lu local ranks", args.member_count);
+        status = OMPI_ERROR;
+        goto out;
     }
 
-    ucs_status_t status = ucg_group_create(mca_coll_ucx_component.ucg_context,
-                                           &params,
-                                           &module->ucg_group);
-    if (status != UCS_OK) {
-        COLL_UCX_ERROR("Failed to create ucg group, %s", ucs_status_string(status));
-        goto err_cleanup_params;
+    if (mca_coll_ucx_component.enable_topo_map && (OPAL_BIND_TO_CORE == OPAL_GET_BINDING_POLICY(opal_hwloc_binding_policy))) {
+        /* Initialize global topology map. */
+        args.topo_map = (char**)malloc(sizeof(char*) * args.member_count);
+        if (args.topo_map == NULL) {
+            MCA_COMMON_UCX_WARN("Failed to allocate memory for %lu local ranks", args.member_count);
+            status = OMPI_ERROR;
+            goto out;
+        }
+
+        for (i = 0; i < args.member_count; i++) {
+            args.topo_map[i] = (char*)malloc(sizeof(char) * args.member_count);
+            if (args.topo_map[i] == NULL) {
+                MCA_COMMON_UCX_WARN("Failed to allocate memory for %lu local ranks", args.member_count);
+                status = OMPI_ERROR;
+                goto out;
+            }
+        }
+
+        status = mca_coll_ucx_init_global_topo(module);
+        if (status != OMPI_SUCCESS) {
+            MCA_COMMON_UCX_WARN("Failed to create global topology.");
+            status = OMPI_ERROR;
+            goto out;
+        }
+
+        if (status == OMPI_SUCCESS) {
+            status = mca_coll_ucx_create_comm_topo(&args, comm);
+            if (status != OMPI_SUCCESS) {
+                MCA_COMMON_UCX_WARN("Failed to create communicator topology.");
+                status = OMPI_ERROR;
+                goto out;
+            }
+        }
+    }
+
+    /* Generate (temporary) rank-distance array */
+    mca_coll_ucg_create_distance_array(comm, my_idx, &args);
+
+    /* Generate node_index for each process */
+    status = mca_coll_ucg_obtain_node_index(args.member_count, comm, args.node_index);
+
+    if (status != OMPI_SUCCESS) {
+        status = OMPI_ERROR;
+        goto out;
+    }
+ 
+    mca_coll_ucg_init_is_socket_balance(&args, module, comm);
+    error = ucg_group_create(mca_coll_ucx_component.ucg_worker, &args, &module->ucg_group);
+
+    /* Examine comm_new return value */
+    if (error != UCS_OK) {
+        MCA_COMMON_UCX_WARN("ucg_new failed: %s", ucs_status_string(error));
+        status = OMPI_ERROR;
+        goto out;
     }
 
     ucs_list_add_tail(&mca_coll_ucx_component.group_head, &module->ucs_list);
-    return OMPI_SUCCESS;
+    status = OMPI_SUCCESS;
 
-err_cleanup_params:
-    mca_coll_ucx_cleanup_group_params(&params);
-    return OMPI_ERROR;
+out:
+    mca_coll_ucg_arg_free(comm, &args);
+    return status;
 }
 
 /*
@@ -557,11 +558,12 @@ static void mca_coll_ucx_module_construct(mca_coll_ucx_module_t *module)
     module->super.coll_allreduce      = mca_coll_ucx_allreduce;
     module->super.coll_barrier        = mca_coll_ucx_barrier;
     module->super.coll_bcast          = mca_coll_ucx_bcast;
+    ucs_list_head_init(&module->ucs_list);
 }
 
 static void mca_coll_ucx_module_destruct(mca_coll_ucx_module_t *module)
 {
-    if (module->ucg_group != NULL) {
+    if (module->ucg_group) {
         ucg_group_destroy(module->ucg_group);
     }
     ucs_list_del(&module->ucs_list);
