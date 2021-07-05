@@ -173,6 +173,27 @@ static inline int mca_common_ucx_datatype_is_contig(ompi_datatype_t *datatype)
            (lb == 0);
 }
 
+__opal_attribute_always_inline__
+static inline int mca_common_ucx_datatype_is_stride(ompi_datatype_t *datatype)
+{
+    return ((datatype->super.flags & OPAL_DATATYPE_FLAG_DATA) &&
+            (datatype->super.opt_desc.desc[0].elem.common.flags & OPAL_DATATYPE_FLAG_CONTIGUOUS) &&
+            (datatype->super.opt_desc.desc[0].elem.common.type != OPAL_DATATYPE_LOOP));
+}
+
+__opal_attribute_always_inline__
+static inline int ompi_datatype_get_stride(ompi_datatype_t *datatype, size_t *size,
+                                           size_t *stride, unsigned *count)
+{
+    size_t datatype_size = *size / (datatype->super.opt_desc.desc[0].elem.blocklen *
+                                    datatype->super.opt_desc.desc[0].elem.count);
+    *stride = datatype->super.opt_desc.desc[0].elem.extent / datatype_size;
+    *size   = datatype->super.opt_desc.desc[0].elem.blocklen;
+    *count  = datatype->super.opt_desc.desc[0].elem.count;
+
+    return 0;
+}
+
 #ifdef HAVE_UCP_REQUEST_PARAM_T
 __opal_attribute_always_inline__ static inline
 mca_common_ucx_datatype_t *mca_common_ucx_init_nbx_datatype(ompi_datatype_t *datatype,
@@ -181,6 +202,7 @@ mca_common_ucx_datatype_t *mca_common_ucx_init_nbx_datatype(ompi_datatype_t *dat
 {
     mca_common_ucx_datatype_t *ucx_datatype;
     int is_contig_pow2;
+    int is_stride_pow2;
 
     ucx_datatype = malloc(sizeof(*ucx_datatype));
     if (ucx_datatype == NULL) {
@@ -199,7 +221,9 @@ mca_common_ucx_datatype_t *mca_common_ucx_init_nbx_datatype(ompi_datatype_t *dat
 
     is_contig_pow2 = mca_common_ucx_datatype_is_contig(datatype) &&
                      (size && !(size & (size - 1))); /* is_pow2(size) */
-    if (is_contig_pow2) {
+    is_stride_pow2 = mca_common_ucx_datatype_is_stride(datatype) &&
+                     (size && !(size & (size - 1))); /* is_pow2(size) */
+    if (is_contig_pow2 || is_stride_pow2) {
         ucx_datatype->size_shift = (int)(log(size) / log(2.0)); /* log2(size) */
     } else {
         ucx_datatype->size_shift = 0;
@@ -213,15 +237,27 @@ mca_common_ucx_datatype_t *mca_common_ucx_init_nbx_datatype(ompi_datatype_t *dat
 
 ucp_datatype_t mca_common_ucx_init_datatype(ompi_datatype_t *datatype)
 {
-    size_t size = 0; /* init to suppress compiler warning */
+    size_t stride, size = 0; /* init to suppress compiler warning */
     ucp_datatype_t ucp_datatype;
     ucs_status_t status;
+    unsigned count;
+    ptrdiff_t lb;
     int ret;
 
     if (mca_common_ucx_datatype_is_contig(datatype)) {
         ompi_datatype_type_size(datatype, &size);
         ucp_datatype = ucp_dt_make_contig(size);
         goto out;
+    }
+
+    if (mca_common_ucx_datatype_is_stride(datatype)) {
+        ompi_datatype_type_lb(datatype, &lb);
+        ompi_datatype_type_size(datatype, &size);
+        ompi_datatype_get_stride(datatype, &size, &stride, &count);
+        status = ucp_dt_make_strided(count, size, stride, lb, &ucp_datatype);
+        if (status == UCS_OK) {
+            goto out;
+        }
     }
 
     status = ucp_dt_create_generic(&common_ucx_generic_datatype_ops,
