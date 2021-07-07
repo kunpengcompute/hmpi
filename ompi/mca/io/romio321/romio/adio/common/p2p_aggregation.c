@@ -7,6 +7,7 @@
 #include "adio.h"
 #include "adio_extern.h"
 #include "../ad_gpfs/ad_gpfs_tuning.h"
+#include "../ad_oceanfs/ad_oceanfs_tuning.h"
 
 #include <pthread.h>
 
@@ -53,7 +54,13 @@ void ADIOI_P2PContigWriteAggregation(ADIO_File fd,
 	coll_bufsize = fd->hints->cb_buffer_size/2;
     }
 #endif
+#ifdef ROMIO_OCEANFS
+	if(get_oceanfsmpio_pthreadio() == 1) {
+		/* split buffer in half for a kind of double buffering with the threads*/
+		coll_bufsize = fd->hints->cb_buffer_size / 2;
+	}
 
+#endif
     int j;
     for (j=0;j<naggs;j++) {
 	if (fd->hints->ranklist[j] == myrank) {
@@ -159,6 +166,12 @@ void ADIOI_P2PContigWriteAggregation(ADIO_File fd,
 	useIOBuffer = 1;
 	io_thread = pthread_self();
     }
+#endif
+#ifdef ROMIO_OCEANFS
+	if(get_oceanfsmpio_pthreadio() && (numberOfRounds > 1)) {
+		useIOBuffer = 1;
+		io_thread = pthread_self();
+	}
 #endif
 
     ADIO_Offset currentRoundFDStart = 0;
@@ -523,7 +536,11 @@ void ADIOI_P2PContigReadAggregation(ADIO_File fd,
 	/* share buffer between working threads */
 	coll_bufsize = coll_bufsize/2;
 #endif
-
+#ifdef ROMIO_OCEANFS
+	if(get_oceanfsmpio_pthreadio() == 1)
+		/* share buffer between working threads */
+		coll_bufsize = coll_bufsize / 2;
+#endif
     int j;
     for (j=0;j<naggs;j++) {
 	if (fd->hints->ranklist[j] == myrank) {
@@ -641,7 +658,12 @@ void ADIOI_P2PContigReadAggregation(ADIO_File fd,
 	io_thread = pthread_self();
     }
 #endif
-
+#ifdef ROMIO_OCEANFS
+	if(get_oceanfsmpio_pthreadio() && (numberOfRounds > 1)) {
+		useIOBuffer = 1;
+		io_thread = pthread_self();
+	}
+#endif
 #ifdef ROMIO_GPFS
     endTimeBase = MPI_Wtime();
     gpfsmpio_prof_cw[GPFSMPIO_CIO_T_MYREQ] += (endTimeBase-startTimeBase);

@@ -15,6 +15,10 @@ int gpfsmpio_write_aggmethod = 0;
 int gpfsmpio_read_aggmethod = 0;
 int gpfsmpio_onesided_always_rmw = 0;
 #endif
+#ifdef ROMIO_OCEANFS
+/* extend this to oceanfs file systems */
+#include "../ad_oceanfs/ad_oceanfs_tuning.h"
+#endif
 
 #include <pthread.h>
 
@@ -198,6 +202,13 @@ void ADIOI_OneSidedWriteAggregation(ADIO_File fd,
 {
     int i,j; /* generic iterators */
 
+#ifdef ROMIO_OCEANFS
+	/* replace gpfsmpioxxx with oceanfsmpioxxx */
+	gpfsmpio_onesided_no_rmw = get_oceanfsmpio_onesided_no_rmw();
+	gpfsmpio_write_aggmethod = get_oceanfsmpio_write_aggmethod();
+	gpfsmpio_read_aggmethod = get_oceanfsmpio_read_aggmethod();
+	gpfsmpio_onesided_always_rmw = get_oceanfsmpio_onesided_always_rmw();
+#endif
 #ifdef onesidedtrace
     if (buf == NULL) {
       printf("ADIOI_OneSidedWriteAggregation - buf is NULL contig_access_count is %d\n",contig_access_count);
@@ -328,7 +339,13 @@ printf("end_offsets[%d] is %ld st_offsets[%d] is %ld\n",j,end_offsets[j],j,st_of
       coll_bufsize = (ADIO_Offset)(fd->hints->cb_buffer_size/2);
     }
 #endif
+#ifdef ROMIO_OCEANFS
+	if(get_oceanfsmpio_pthreadio() == 1) {
+		/* split buffer in half for a kind of double buffering with the threads*/
+		coll_bufsize = (ADIO_Offset)(fd->hints->cb_buffer_size / 2);
+	}
 
+#endif
     /* This logic defines values that are used later to determine what offsets define the portion
      * of the file domain the agg is writing this round.
      */
@@ -765,7 +782,13 @@ printf("end_offsets[%d] is %ld st_offsets[%d] is %ld\n",j,end_offsets[j],j,st_of
     io_thread = pthread_self();
     }
 #endif
+#ifdef ROMIO_OCEANFS
+	if(get_oceanfsmpio_pthreadio() && (numberOfRounds > 1)) {
+		useIOBuffer = 1;
+		io_thread = pthread_self();
+	}
 
+#endif
     /* use the write buffer allocated in the file_open */
     char *write_buf0 = fd->io_buf;
     char *write_buf1 = fd->io_buf + coll_bufsize;
@@ -1233,6 +1256,13 @@ void ADIOI_OneSidedReadAggregation(ADIO_File fd,
 {
     int i,j; /* generic iterators */
 
+#ifdef ROMIO_OCEANFS
+	/* replace gpfsmpioxxx with oceanfsmpioxxx */
+	gpfsmpio_onesided_no_rmw = get_oceanfsmpio_onesided_no_rmw();
+	gpfsmpio_write_aggmethod = get_oceanfsmpio_write_aggmethod();
+	gpfsmpio_read_aggmethod = get_oceanfsmpio_read_aggmethod();
+	gpfsmpio_onesided_always_rmw = get_oceanfsmpio_onesided_always_rmw();
+#endif
 #ifdef onesidedtrace
     if (buf == NULL) {
       printf("ADIOI_OneSidedWriteAggregation - buf is NULL contig_access_count is %d\n",contig_access_count);
@@ -1364,7 +1394,13 @@ printf("end_offsets[%d] is %ld st_offsets[%d] is %ld\n",j,end_offsets[j],j,st_of
     coll_bufsize = fd->hints->cb_buffer_size/2;
     }
 #endif
+#ifdef ROMIO_OCEANFS
+	if(get_oceanfsmpio_pthreadio() == 1) {
+		/* split buffer in half for a kind of double buffering with the threads*/
+		coll_bufsize = fd->hints->cb_buffer_size / 2;
+	}
 
+#endif
     /* This logic defines values that are used later to determine what offsets define the portion
      * of the file domain the agg is reading this round.
      */
@@ -1784,7 +1820,13 @@ printf("end_offsets[%d] is %ld st_offsets[%d] is %ld\n",j,end_offsets[j],j,st_of
     io_thread = pthread_self();
     }
 #endif
+#ifdef ROMIO_OCEANFS
+	if(get_oceanfsmpio_pthreadio() && (numberOfRounds > 1)) {
+		useIOBuffer = 1;
+		io_thread = pthread_self();
+	}
 
+#endif
     MPI_Win read_buf_window = fd->io_buf_window;
 
     ADIO_Offset currentRoundFDStart = 0, nextRoundFDStart = 0;

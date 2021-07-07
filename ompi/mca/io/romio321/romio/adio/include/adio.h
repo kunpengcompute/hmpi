@@ -21,6 +21,12 @@
 #ifndef ADIO_INCLUDE
 #define ADIO_INCLUDE
 
+#include <unistd.h>
+#include <time.h>
+#include "ad_env.h"
+
+
+
 #ifdef SPPUX
 #define _POSIX_SOURCE
 #endif
@@ -305,6 +311,7 @@ typedef struct {
 #define ADIO_ZOIDFS              167   /* ZoidFS: the I/O forwarding fs */
 /* #define ADIO_BG               168 */
 #define ADIO_GPFS                  168
+#define ADIO_OCEANFS             169
 
 #define ADIO_SEEK_SET            SEEK_SET
 #define ADIO_SEEK_CUR            SEEK_CUR
