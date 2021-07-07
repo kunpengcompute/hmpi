@@ -17,6 +17,7 @@
 #                         reserved.
 # Copyright (c) 2015-2020 Research Organization for Information Science
 #                         and Technology (RIST).  All rights reserved.
+# Copyright (c) 2021      Huawei Technologies Co., Ltd. All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -249,6 +250,7 @@ libmpi_c_mpi_la_SOURCES = \
         group_translate_ranks.c \
         group_union.c \
         ibsend.c \
+        idle.c \
         improbe.c \
         imrecv.c \
         info_c2f.c \

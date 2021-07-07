@@ -14,8 +14,8 @@
  *                         reserved.
  * Copyright (c) 2018      Triad National Security, LLC. All rights
  *                         reserved.
- *
  * Copyright (c) 2020      Intel, Inc.  All rights reserved.
+ * Copyright (c) 2021      Huawei Technologies Co., Ltd. All rights reserved.
  * $COPYRIGHT$
  *
  * Additional copyrights may follow
@@ -142,6 +142,22 @@ OPAL_DECLSPEC void opal_progress_set_event_poll_rate(int microseconds);
 typedef int (*opal_progress_callback_t)(void);
 
 /**
+ * Idle progress callback function typedef
+ *
+ * Prototype for the an idle progress function callback. Progress
+ * function callbacks can be registered with opal_progress_register_idle()
+ * and deregistered with opal_progress_deregister(). It should be noted
+ * that either registering or deregistering a function callback is an
+ * extraordinarily expensive operation and should not be used for
+ * potentially short callback lifetimes.
+ *
+ * @param   arg    Function-specific argument provided during registartion
+ * @return         Whether there was actual work done during the call.
+ */
+typedef int (*opal_progress_idle_callback_t)(void* arg);
+
+
+/**
  * Register an event to be progressed
  *
  * Register an event to be progressed during calls to opal_progress().
@@ -151,6 +167,9 @@ OPAL_DECLSPEC int opal_progress_register(opal_progress_callback_t cb);
 
 OPAL_DECLSPEC int opal_progress_register_lp(opal_progress_callback_t cb);
 
+OPAL_DECLSPEC int opal_progress_register_idle(opal_progress_idle_callback_t cb,
+                                              void* arg, unsigned *idle_index);
+
 /**
  * Deregister previously registered event
  *
@@ -158,6 +177,8 @@ OPAL_DECLSPEC int opal_progress_register_lp(opal_progress_callback_t cb);
  * Please read the note in opal_progress_callback_t.
  */
 OPAL_DECLSPEC int opal_progress_unregister(opal_progress_callback_t cb);
+
+OPAL_DECLSPEC int opal_progress_unregister_idle(unsigned idle_index);
 
 OPAL_DECLSPEC extern int opal_progress_spin_count;
 

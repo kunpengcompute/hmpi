@@ -22,6 +22,7 @@
  * Copyright (c) 2017-2019 IBM Corporation.  All rights reserved.
  * Copyright (c) 2018      FUJITSU LIMITED.  All rights reserved.
  * Copyright (c) 2021      Google, LLC. All rights reserved.
+ * Copyright (c) 2021      Huawei Technologies Co., Ltd. All rights reserved.
  * $COPYRIGHT$
  *
  * Additional copyrights may follow
@@ -478,6 +479,7 @@ typedef int (MPI_Win_delete_attr_function)(MPI_Win, int, void *, void *);
 typedef int (MPI_Grequest_query_function)(void *, MPI_Status *);
 typedef int (MPI_Grequest_free_function)(void *);
 typedef int (MPI_Grequest_cancel_function)(void *, int);
+typedef int (MPI_Idle_progress_function)(void *);
 
 /*
  * Deprecated typedefs.  Usage is discouraged, as these may be deleted
@@ -1959,6 +1961,8 @@ OMPI_DECLSPEC  int MPI_Win_unlock_all(MPI_Win win);
 OMPI_DECLSPEC  int MPI_Win_wait(MPI_Win win);
 OMPI_DECLSPEC  double MPI_Wtick(void);
 OMPI_DECLSPEC  double MPI_Wtime(void);
+OMPI_DECLSPEC  int MPI_Register_idle_progress(MPI_Idle_progress_function idle_progress_fn, void *arg, unsigned *idle_index);
+OMPI_DECLSPEC  int MPI_Deregister_idle_progress(unsigned idle_index);
 
   /*
    * Profiling MPI API
@@ -2635,6 +2639,8 @@ OMPI_DECLSPEC  int PMPI_Win_unlock_all(MPI_Win win);
 OMPI_DECLSPEC  int PMPI_Win_wait(MPI_Win win);
 OMPI_DECLSPEC  double PMPI_Wtick(void);
 OMPI_DECLSPEC  double PMPI_Wtime(void);
+OMPI_DECLSPEC  int PMPI_Register_idle_progress(MPI_Idle_progress_function idle_progress_fn, void *arg, unsigned *idle_index);
+OMPI_DECLSPEC  int PMPI_Deregister_idle_progress(unsigned idle_index);
 OMPI_DECLSPEC  int PMPI_T_init_thread (int required, int *provided);
 OMPI_DECLSPEC  int PMPI_T_finalize (void);
 OMPI_DECLSPEC  int PMPI_T_cvar_get_num (int *num_cvar);
