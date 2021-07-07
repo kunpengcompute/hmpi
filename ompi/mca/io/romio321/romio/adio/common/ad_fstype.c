@@ -82,6 +82,10 @@
 # define GPFS_SUPER_MAGIC 0x47504653
 #endif
 
+#if defined(ROMIO_OCEANFS) && !defined(OCEANFS_MAGIC)
+# define OCEANFS_MAGIC 0xFFEA36969
+#endif
+
 #ifdef ROMIO_HAVE_STRUCT_STATVFS_WITH_F_BASETYPE
 # ifdef HAVE_SYS_STATVFS_H
 # include <sys/statvfs.h>
@@ -413,6 +417,13 @@ static void ADIO_FileSysType_fncall(const char *filename, int *fstype, int *erro
     }
 # endif
 
+# ifdef ROMIO_OCEANFS
+    if (fsbuf.f_type == OCEANFS_MAGIC) {
+        *fstype = ADIO_OCEANFS;
+        return;
+    }
+# endif
+
 # ifdef ROMIO_UFS
     /* if UFS support is enabled, default to that */
     *fstype = ADIO_UFS;
@@ -552,6 +563,10 @@ static void ADIO_FileSysType_prefix(const char *filename, int *fstype, int *erro
     else if (!strncmp(filename, "zoidfs:", 7)||
 		    !strncmp(filename, "ZOIDFS:", 7)) {
 	    *fstype = ADIO_ZOIDFS;
+    } 
+    else if (!strncmp(filename, "oceanfs:", 8)||
+		    !strncmp(filename, "OCEANFS:", 8)) {
+	    *fstype = ADIO_OCEANFS;
     } 
     else if (!strncmp(filename, "testfs:", 7) 
 	     || !strncmp(filename, "TESTFS:", 7))
@@ -853,6 +868,14 @@ void ADIO_ResolveFileType(MPI_Comm comm, const char *filename, int *fstype,
 	*ops = &ADIO_LUSTRE_operations;
 #endif
     }
+	if (file_system == ADIO_OCEANFS) {
+#ifndef ROMIO_OCEANFS 
+		*error_code = MPIO_Err_create_code(MPI_SUCCESS, MPIR_ERR_RECOVERABLE, myname, __LINE__, MPI_ERR_IO, "**iofstypeunsupported", 0);
+		return;
+#else
+		*ops = &ADIO_OCEANFS_operations;
+#endif
+		}
     if (file_system == ADIO_ZOIDFS) {
 #ifndef ROMIO_ZOIDFS
 	*error_code = MPIO_Err_create_code(MPI_SUCCESS, MPIR_ERR_RECOVERABLE,
