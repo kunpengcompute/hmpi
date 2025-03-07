@@ -251,6 +251,7 @@ static int han_register(void)
     TOPO_LVL_T topo_lvl;
     COMPONENT_T component;
 
+    cs->han_priority = -1;
     (void) mca_base_component_var_register(c, "priority", "Priority of the HAN coll component",
                                            MCA_BASE_VAR_TYPE_INT, NULL, 0, 0,
                                            OPAL_INFO_LVL_9,
