@@ -85,6 +85,9 @@ static int register_components(mca_base_framework_t *framework)
     OPAL_LIST_FOREACH_SAFE (cli, next, &framework->framework_components,
                             mca_base_component_list_item_t) {
         component = (mca_base_component_t *) cli->cli_component;
+        if (strcmp(component->mca_component_name, "han") == 0) {
+            continue;
+        }
 
         opal_output_verbose(MCA_BASE_VERBOSE_COMPONENT, output_id,
                             "mca: base: components_register: found loaded component %s",
