@@ -53,6 +53,7 @@
 #include "orte/runtime/orte_quit.h"
 
 #include "orte/mca/ras/base/ras_private.h"
+#include "opal/util/net.h"
 
 /* function to display allocation */
 void orte_ras_base_display_alloc(void)
