@@ -456,7 +456,7 @@ static int mca_coll_ucg_module_enable(mca_coll_base_module_t *module,
     /* if any fails, resources will be freed in mca_coll_ucg_module_destruct() */
     rc = mca_coll_ucg_save_fallback(ucg_module, comm);
     if (rc != OMPI_SUCCESS) {
-        UCG_ERROR("Failed to save coll fallback, %d", rc);
+        UCG_INFO("Failed to save coll fallback, %d", rc);
         return rc;
     }
 
