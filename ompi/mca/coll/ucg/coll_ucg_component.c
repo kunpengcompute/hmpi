@@ -1,6 +1,6 @@
 /* -*- Mode: C; c-basic-offset:4 ; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2022-2022 Huawei Technologies Co., Ltd.
+ * Copyright (c) 2022-2025 Huawei Technologies Co., Ltd.
  *                         All rights reserved.
  * COPYRIGHT$
  *
@@ -85,6 +85,15 @@ mca_coll_ucg_component_t mca_coll_ucg_component = {
 
 static int mca_coll_ucg_register(void)
 {
+    unsigned long long cpu_id;
+    __asm__ volatile ("mrs %0, MIDR_EL1":"=r"(cpu_id));
+    unsigned long long vendor = (cpu_id >> 0x18) & 0xFF;
+    unsigned long long part_id = (cpu_id >> 0x4) & 0xFFF;
+    // If CPU arch is module F, reduce priority of UCG.
+    if ((vendor == 0x48) && (part_id == 0xD22)) {
+        mca_coll_ucg_component.priority = 0;
+    }
+
     (void)mca_base_component_var_register(&mca_coll_ucg_component.super.collm_version, "priority",
                                           "Priority of the UCG component",
                                           MCA_BASE_VAR_TYPE_INT, NULL, 0, 0,
