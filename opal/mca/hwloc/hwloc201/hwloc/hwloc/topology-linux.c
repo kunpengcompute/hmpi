@@ -2957,18 +2957,8 @@ static int hwloc_linux_try_handle_kunpeng_moc_hwdata_properties(struct knl_hwdat
     hwdata->memory_mode[0] = '\0';
     hwdata->cluster_mode[0] = '\0';
 
-    unsigned long total_cache_size = 64UL*1024*1024*1024 - MCDRAM_numa_size;
-
-    if (!MCDRAM_nbnodes) {
-        strcpy(hwdata->memory_mode, "Cache");
-    } else {
-        if (!total_cache_size)
-            strcpy(hwdata->memory_mode, "Flat");
-        else
-            fprintf(stderr, "Unexpected Kunpeng MCDRAM cache size %lu\n", total_cache_size);
-    }
-
-    hwdata->mcdram_cache_size = total_cache_size/DDR_nbnodes;
+    strcpy(hwdata->memory_mode, "Cache");
+    hwdata->mcdram_cache_size = 4UL*1024;
     hwdata->mcdram_cache_associativity = 1;
     hwdata->mcdram_cache_inclusiveness = 0;
     hwdata->mcdram_cache_line_size = 64;
@@ -3365,6 +3355,9 @@ look_sysfsnode(struct hwloc_topology *topology,
 	    /* nothing else to do for DDR */
 	    continue;
 	  }
+    if (data->is_kunpeng_with_moc) {
+      continue;
+    }
 	  /* MCDRAM */
 	  nodes[i]->subtype = strdup("MCDRAM");
 
@@ -3410,7 +3403,7 @@ look_sysfsnode(struct hwloc_topology *topology,
       /* everything is ready for insertion now */
 
       /* insert knl clusters */
-      if (data->is_knl || data->is_kunpeng_with_moc) {
+      if (data->is_knl) {
 	for(i=0; i<nr_clusters; i++) {
         clusters[i] = hwloc_insert_object_by_cpuset(topology, clusters[i]);
 	  /* failure or replace can be ignored */
@@ -3422,6 +3415,9 @@ look_sysfsnode(struct hwloc_topology *topology,
 	hwloc_obj_t node = nodes[i];
 	if (node) {
 	  hwloc_obj_t res_obj;
+    if (hwloc_bitmap_is_zero(node->cpuset) && data->is_kunpeng_with_moc) {
+      continue;
+    }
 	  if ((data->is_knl || data->is_kunpeng_with_moc) && node_cluster[i] != -1) {
 	    /* directly attach to the existing cluster */
 	    hwloc_obj_t parent = clusters[node_cluster[i]];
