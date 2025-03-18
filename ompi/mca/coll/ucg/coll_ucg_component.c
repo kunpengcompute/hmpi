@@ -89,7 +89,7 @@ static int mca_coll_ucg_register(void)
     __asm__ volatile ("mrs %0, MIDR_EL1":"=r"(cpu_id));
     unsigned long long vendor = (cpu_id >> 0x18) & 0xFF;
     unsigned long long part_id = (cpu_id >> 0x4) & 0xFFF;
-    // If CPU arch is module F, reduce priority of UCG.
+    // Reduce priority of UCG on some CPU archs.
     if ((vendor == 0x48) && (part_id == 0xD22)) {
         mca_coll_ucg_component.priority = 0;
     }
