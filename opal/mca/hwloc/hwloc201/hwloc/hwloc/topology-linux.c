@@ -3415,7 +3415,7 @@ look_sysfsnode(struct hwloc_topology *topology,
 	hwloc_obj_t node = nodes[i];
 	if (node) {
 	  hwloc_obj_t res_obj;
-    if (hwloc_bitmap_is_zero(node->cpuset) && data->is_kunpeng_with_moc) {
+    if (hwloc_bitmap_iszero(node->cpuset) && data->is_kunpeng_with_moc) {
       continue;
     }
 	  if ((data->is_knl || data->is_kunpeng_with_moc) && node_cluster[i] != -1) {
