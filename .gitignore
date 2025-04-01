@@ -98,8 +98,6 @@ ltoptions.m4
 # tarballs themselves, and those are artifacts we will store in git.
 3rd-party/libevent-*
 !3rd-party/libevent-*.tar.*
-3rd-party/hwloc-*
-!3rd-party/hwloc-*.tar.*
 3rd-party/treematch/config.h
 
 3rd-party/romio341/adio/include/romioconf.h

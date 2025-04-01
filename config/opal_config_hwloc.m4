@@ -212,7 +212,6 @@ AC_DEFUN([_OPAL_CONFIG_HWLOC_INTERNAL], [
 
     # Note: To update the version of hwloc shipped, update the
     # constant in autogen.pl.
-    OPAL_EXPAND_TARBALL([3rd-party/hwloc_tarball], [3rd-party/hwloc_directory], [configure])
     OPAL_SUBDIR_ENV_CLEAN([opal_hwloc_configure])
     PAC_CONFIG_SUBDIR_ARGS([3rd-party/hwloc_directory], [$extra_configure_args], [[--enable-debug]],
         [subconfig_happy=1], [subconfig_happy=0])
