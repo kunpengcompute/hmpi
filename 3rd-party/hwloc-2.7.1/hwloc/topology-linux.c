@@ -55,6 +55,7 @@ struct hwloc_linux_backend_data_s {
     HWLOC_LINUX_ARCH_UNKNOWN
   } arch;
   int is_knl;
+  int is_kunpeng_with_moc;
   int is_amd_with_CU;
   int use_numa_distances;
   int use_numa_distances_for_cpuless;
@@ -2727,6 +2728,23 @@ struct knl_hwdata {
   int mcdram_cache_line_size;
 };
 
+static int hwloc_linux_try_handle_kunpeng_moc_hwdata_properties(struct knl_hwdata *hwdata,
+                                                                unsigned DDR_nbnodes,
+                                                                unsigned long DDR_numa_size,
+                                                                unsigned MCDRAM_nbnodes,
+                                                                unsigned long MCDRAM_numa_size)
+{
+  hwdata->memory_mode[0] = '\0';
+  hwdata->cluster_mode[0] = '\0';
+
+  strcpy(hwdata->memory_mode, "Cache");
+  hwdata->mcdram_cache_size = 4UL*1024;
+  hwdata->mcdram_cache_associativity = 1;
+  hwdata->mcdram_cache_inclusiveness = 0;
+  hwdata->mcdram_cache_line_size = 64;
+  return 0;
+}
+
 struct knl_distances_summary {
   unsigned nb_values; /* number of different values found in the matrix */
   struct knl_distances_value {
@@ -3331,7 +3349,7 @@ hwloc_linux_knl_numa_quirk(struct hwloc_topology *topology,
 {
   struct knl_hwdata hwdata;
   struct knl_distances_summary dist;
-  unsigned i;
+  unsigned i, j;
   char * fallback_env = getenv("HWLOC_KNL_HDH_FALLBACK");
   int fallback = fallback_env ? atoi(fallback_env) : -1; /* by default, only fallback if needed */
   char * mscache_as_l3_env = getenv("HWLOC_KNL_MSCACHE_L3");
@@ -3340,137 +3358,165 @@ hwloc_linux_knl_numa_quirk(struct hwloc_topology *topology,
   if (*failednodes)
     goto error;
 
-  if (hwloc_linux_knl_parse_numa_distances(nbnodes, distances, &dist) < 0)
-    goto error;
-
-  hwdata.memory_mode[0] = '\0';
-  hwdata.cluster_mode[0] = '\0';
-  hwdata.mcdram_cache_size = -1;
-  hwdata.mcdram_cache_associativity = -1;
-  hwdata.mcdram_cache_inclusiveness = -1;
-  hwdata.mcdram_cache_line_size = -1;
-  if (fallback == 1)
-    hwloc_debug("KNL dumped hwdata ignored, forcing fallback to heuristics\n");
-  else
-    hwloc_linux_knl_read_hwdata_properties(data, &hwdata);
-  if (fallback != 0)
-    hwloc_linux_knl_guess_hwdata_properties(&hwdata, nodes, nbnodes, &dist);
-
-  if (strcmp(hwdata.cluster_mode, "All2All")
-      && strcmp(hwdata.cluster_mode, "Hemisphere")
-      && strcmp(hwdata.cluster_mode, "Quadrant")
-      && strcmp(hwdata.cluster_mode, "SNC2")
-      && strcmp(hwdata.cluster_mode, "SNC4")) {
-    if (hwloc_hide_errors() < 2)
-      fprintf(stderr, "hwloc/linux: Failed to find a usable KNL cluster mode (%s)\n", hwdata.cluster_mode);
-    goto error;
-  }
-  if (strcmp(hwdata.memory_mode, "Cache")
-      && strcmp(hwdata.memory_mode, "Flat")
-      && strcmp(hwdata.memory_mode, "Hybrid25")
-      && strcmp(hwdata.memory_mode, "Hybrid50")) {
-    if (hwloc_hide_errors() < 2)
-      fprintf(stderr, "hwloc/linux: Failed to find a usable KNL memory mode (%s)\n", hwdata.memory_mode);
-    goto error;
-  }
-
-  if (mscache_as_l3) {
-    if (!hwloc_filter_check_keep_object_type(topology, HWLOC_OBJ_L3CACHE))
-      hwdata.mcdram_cache_size = 0;
-  } else {
-    if (!hwloc_filter_check_keep_object_type(topology, HWLOC_OBJ_MEMCACHE))
-      hwdata.mcdram_cache_size = 0;
-  }
-
-  hwloc_obj_add_info(topology->levels[0][0], "ClusterMode", hwdata.cluster_mode);
-  hwloc_obj_add_info(topology->levels[0][0], "MemoryMode", hwdata.memory_mode);
-
-  if (!strcmp(hwdata.cluster_mode, "All2All")
-      || !strcmp(hwdata.cluster_mode, "Hemisphere")
-      || !strcmp(hwdata.cluster_mode, "Quadrant")) {
-    if (!strcmp(hwdata.memory_mode, "Cache")) {
-      /* Quadrant-Cache */
-      if (nbnodes != 1) {
-        if (hwloc_hide_errors() < 2)
-          fprintf(stderr, "hwloc/linux: Found %u NUMA nodes instead of 1 in mode %s-%s\n", nbnodes, hwdata.cluster_mode, hwdata.memory_mode);
-	goto error;
+  if (data->is_kunpeng_with_moc) {
+    unsigned long MCDRAM_numa_size = 0, DDR_numa_size = 0;
+	  unsigned MCDRAM_nbnodes = 0, DDR_nbnodes = 0;
+    for(i=0; i<nbnodes; i++)
+      if (hwloc_bitmap_iszero(nodes[i]->cpuset)) {
+        MCDRAM_numa_size += nodes[i]->attr->numanode.local_memory;
+        MCDRAM_nbnodes++;
+      } else {
+        DDR_numa_size += nodes[i]->attr->numanode.local_memory;
+        DDR_nbnodes++;
       }
-      hwloc_linux_knl_add_cluster(topology, nodes[0], NULL, &hwdata, mscache_as_l3, 1, failednodes);
+    hwloc_linux_try_handle_kunpeng_moc_hwdata_properties(&hwdata,
+      DDR_nbnodes, DDR_numa_size,
+      MCDRAM_nbnodes, MCDRAM_numa_size);
 
-    } else {
-      /* Quadrant-Flat/Hybrid */
-      if (nbnodes != 2) {
-        if (hwloc_hide_errors() < 2)
-          fprintf(stderr, "hwloc/linux: Found %u NUMA nodes instead of 2 in mode %s-%s\n", nbnodes, hwdata.cluster_mode, hwdata.memory_mode);
-	goto error;
+    if (hwdata.cluster_mode[0])
+      hwloc_obj_add_info(topology->levels[0][0], "ClusterMode", hwdata.cluster_mode);
+    if (hwdata.memory_mode[0])
+      hwloc_obj_add_info(topology->levels[0][0], "MemoryMode", hwdata.memory_mode);
+    for (i = 0; i < nbnodes; i++) {
+      if (!hwloc_bitmap_iszero(nodes[i]->cpuset)) {
+        hwloc_linux_knl_add_cluster(topology, nodes[i], NULL, &hwdata, mscache_as_l3, 4, failednodes);
+      } else {
+        (*failednodes)++;
       }
-      if (!strcmp(hwdata.memory_mode, "Flat"))
-	hwdata.mcdram_cache_size = 0;
-      hwloc_linux_knl_add_cluster(topology, nodes[0], nodes[1], &hwdata, mscache_as_l3, 1, failednodes);
+    }
+  } else if (data->is_knl) {
+    if (hwloc_linux_knl_parse_numa_distances(nbnodes, distances, &dist) < 0)
+    goto error;
+
+    hwdata.memory_mode[0] = '\0';
+    hwdata.cluster_mode[0] = '\0';
+    hwdata.mcdram_cache_size = -1;
+    hwdata.mcdram_cache_associativity = -1;
+    hwdata.mcdram_cache_inclusiveness = -1;
+    hwdata.mcdram_cache_line_size = -1;
+    if (fallback == 1)
+      hwloc_debug("KNL dumped hwdata ignored, forcing fallback to heuristics\n");
+    else
+      hwloc_linux_knl_read_hwdata_properties(data, &hwdata);
+    if (fallback != 0)
+      hwloc_linux_knl_guess_hwdata_properties(&hwdata, nodes, nbnodes, &dist);
+
+    if (strcmp(hwdata.cluster_mode, "All2All")
+        && strcmp(hwdata.cluster_mode, "Hemisphere")
+        && strcmp(hwdata.cluster_mode, "Quadrant")
+        && strcmp(hwdata.cluster_mode, "SNC2")
+        && strcmp(hwdata.cluster_mode, "SNC4")) {
+      if (hwloc_hide_errors() < 2)
+        fprintf(stderr, "hwloc/linux: Failed to find a usable KNL cluster mode (%s)\n", hwdata.cluster_mode);
+      goto error;
+    }
+    if (strcmp(hwdata.memory_mode, "Cache")
+        && strcmp(hwdata.memory_mode, "Flat")
+        && strcmp(hwdata.memory_mode, "Hybrid25")
+        && strcmp(hwdata.memory_mode, "Hybrid50")) {
+      if (hwloc_hide_errors() < 2)
+        fprintf(stderr, "hwloc/linux: Failed to find a usable KNL memory mode (%s)\n", hwdata.memory_mode);
+      goto error;
     }
 
-  } else if (!strcmp(hwdata.cluster_mode, "SNC2")) {
-    if (!strcmp(hwdata.memory_mode, "Cache")) {
-      /* SNC2-Cache */
-      if (nbnodes != 2) {
-        if (hwloc_hide_errors() < 2)
-          fprintf(stderr, "hwloc/linux: Found %u NUMA nodes instead of 2 in mode %s-%s\n", nbnodes, hwdata.cluster_mode, hwdata.memory_mode);
-	goto error;
-      }
-      hwloc_linux_knl_add_cluster(topology, nodes[0], NULL, &hwdata, mscache_as_l3, 2, failednodes);
-      hwloc_linux_knl_add_cluster(topology, nodes[1], NULL, &hwdata, mscache_as_l3, 2, failednodes);
-
+    if (mscache_as_l3) {
+      if (!hwloc_filter_check_keep_object_type(topology, HWLOC_OBJ_L3CACHE))
+        hwdata.mcdram_cache_size = 0;
     } else {
-      /* SNC2-Flat/Hybrid */
-      unsigned ddr[2], mcdram[2];
-      if (nbnodes != 4) {
-        if (hwloc_hide_errors() < 2)
-          fprintf(stderr, "hwloc/linux: Found %u NUMA nodes instead of 2 in mode %s-%s\n", nbnodes, hwdata.cluster_mode, hwdata.memory_mode);
-	goto error;
-      }
-      if (hwloc_linux_knl_identify_4nodes(distances, &dist, ddr, mcdram) < 0) {
-        if (hwloc_hide_errors() < 2)
-          fprintf(stderr, "Uhwloc/linux: nexpected distance layout for mode %s-%s\n", hwdata.cluster_mode, hwdata.memory_mode);
-	goto error;
-      }
-      if (!strcmp(hwdata.memory_mode, "Flat"))
-	hwdata.mcdram_cache_size = 0;
-      hwloc_linux_knl_add_cluster(topology, nodes[ddr[0]], nodes[mcdram[0]], &hwdata, mscache_as_l3, 2, failednodes);
-      hwloc_linux_knl_add_cluster(topology, nodes[ddr[1]], nodes[mcdram[1]], &hwdata, mscache_as_l3, 2, failednodes);
+      if (!hwloc_filter_check_keep_object_type(topology, HWLOC_OBJ_MEMCACHE))
+        hwdata.mcdram_cache_size = 0;
     }
 
-  } else if (!strcmp(hwdata.cluster_mode, "SNC4")) {
-    if (!strcmp(hwdata.memory_mode, "Cache")) {
-      /* SNC4-Cache */
-      if (nbnodes != 4) {
-        if (hwloc_hide_errors() < 2)
-          fprintf(stderr, "hwloc/linux: Found %u NUMA nodes instead of 4 in mode %s-%s\n", nbnodes, hwdata.cluster_mode, hwdata.memory_mode);
-	goto error;
-      }
-      hwloc_linux_knl_add_cluster(topology, nodes[0], NULL, &hwdata, mscache_as_l3, 4, failednodes);
-      hwloc_linux_knl_add_cluster(topology, nodes[1], NULL, &hwdata, mscache_as_l3, 4, failednodes);
-      hwloc_linux_knl_add_cluster(topology, nodes[2], NULL, &hwdata, mscache_as_l3, 4, failednodes);
-      hwloc_linux_knl_add_cluster(topology, nodes[3], NULL, &hwdata, mscache_as_l3, 4, failednodes);
+    hwloc_obj_add_info(topology->levels[0][0], "ClusterMode", hwdata.cluster_mode);
+    hwloc_obj_add_info(topology->levels[0][0], "MemoryMode", hwdata.memory_mode);
 
-    } else {
-      /* SNC4-Flat/Hybrid */
-      unsigned ddr[4], mcdram[4];
-      if (nbnodes != 8) {
-        if (hwloc_hide_errors() < 2)
-          fprintf(stderr, "hwloc/linux: Found %u NUMA nodes instead of 2 in mode %s-%s\n", nbnodes, hwdata.cluster_mode, hwdata.memory_mode);
-	goto error;
+    if (!strcmp(hwdata.cluster_mode, "All2All")
+        || !strcmp(hwdata.cluster_mode, "Hemisphere")
+        || !strcmp(hwdata.cluster_mode, "Quadrant")) {
+      if (!strcmp(hwdata.memory_mode, "Cache")) {
+        /* Quadrant-Cache */
+        if (nbnodes != 1) {
+          if (hwloc_hide_errors() < 2)
+            fprintf(stderr, "hwloc/linux: Found %u NUMA nodes instead of 1 in mode %s-%s\n", nbnodes, hwdata.cluster_mode, hwdata.memory_mode);
+    goto error;
+        }
+        hwloc_linux_knl_add_cluster(topology, nodes[0], NULL, &hwdata, mscache_as_l3, 1, failednodes);
+
+      } else {
+        /* Quadrant-Flat/Hybrid */
+        if (nbnodes != 2) {
+          if (hwloc_hide_errors() < 2)
+            fprintf(stderr, "hwloc/linux: Found %u NUMA nodes instead of 2 in mode %s-%s\n", nbnodes, hwdata.cluster_mode, hwdata.memory_mode);
+    goto error;
+        }
+        if (!strcmp(hwdata.memory_mode, "Flat"))
+    hwdata.mcdram_cache_size = 0;
+        hwloc_linux_knl_add_cluster(topology, nodes[0], nodes[1], &hwdata, mscache_as_l3, 1, failednodes);
       }
-      if (hwloc_linux_knl_identify_8nodes(distances, &dist, ddr, mcdram) < 0) {
-        if (hwloc_hide_errors() < 2)
-          fprintf(stderr, "hwloc/linux: Unexpected distance layout for mode %s-%s\n", hwdata.cluster_mode, hwdata.memory_mode);
-	goto error;
+
+    } else if (!strcmp(hwdata.cluster_mode, "SNC2")) {
+      if (!strcmp(hwdata.memory_mode, "Cache")) {
+        /* SNC2-Cache */
+        if (nbnodes != 2) {
+          if (hwloc_hide_errors() < 2)
+            fprintf(stderr, "hwloc/linux: Found %u NUMA nodes instead of 2 in mode %s-%s\n", nbnodes, hwdata.cluster_mode, hwdata.memory_mode);
+    goto error;
+        }
+        hwloc_linux_knl_add_cluster(topology, nodes[0], NULL, &hwdata, mscache_as_l3, 2, failednodes);
+        hwloc_linux_knl_add_cluster(topology, nodes[1], NULL, &hwdata, mscache_as_l3, 2, failednodes);
+
+      } else {
+        /* SNC2-Flat/Hybrid */
+        unsigned ddr[2], mcdram[2];
+        if (nbnodes != 4) {
+          if (hwloc_hide_errors() < 2)
+            fprintf(stderr, "hwloc/linux: Found %u NUMA nodes instead of 2 in mode %s-%s\n", nbnodes, hwdata.cluster_mode, hwdata.memory_mode);
+    goto error;
+        }
+        if (hwloc_linux_knl_identify_4nodes(distances, &dist, ddr, mcdram) < 0) {
+          if (hwloc_hide_errors() < 2)
+            fprintf(stderr, "Uhwloc/linux: nexpected distance layout for mode %s-%s\n", hwdata.cluster_mode, hwdata.memory_mode);
+    goto error;
+        }
+        if (!strcmp(hwdata.memory_mode, "Flat"))
+    hwdata.mcdram_cache_size = 0;
+        hwloc_linux_knl_add_cluster(topology, nodes[ddr[0]], nodes[mcdram[0]], &hwdata, mscache_as_l3, 2, failednodes);
+        hwloc_linux_knl_add_cluster(topology, nodes[ddr[1]], nodes[mcdram[1]], &hwdata, mscache_as_l3, 2, failednodes);
       }
-      if (!strcmp(hwdata.memory_mode, "Flat"))
-	hwdata.mcdram_cache_size = 0;
-      hwloc_linux_knl_add_cluster(topology, nodes[ddr[0]], nodes[mcdram[0]], &hwdata, mscache_as_l3, 4, failednodes);
-      hwloc_linux_knl_add_cluster(topology, nodes[ddr[1]], nodes[mcdram[1]], &hwdata, mscache_as_l3, 4, failednodes);
-      hwloc_linux_knl_add_cluster(topology, nodes[ddr[2]], nodes[mcdram[2]], &hwdata, mscache_as_l3, 4, failednodes);
-      hwloc_linux_knl_add_cluster(topology, nodes[ddr[3]], nodes[mcdram[3]], &hwdata, mscache_as_l3, 4, failednodes);
+
+    } else if (!strcmp(hwdata.cluster_mode, "SNC4")) {
+      if (!strcmp(hwdata.memory_mode, "Cache")) {
+        /* SNC4-Cache */
+        if (nbnodes != 4) {
+          if (hwloc_hide_errors() < 2)
+            fprintf(stderr, "hwloc/linux: Found %u NUMA nodes instead of 4 in mode %s-%s\n", nbnodes, hwdata.cluster_mode, hwdata.memory_mode);
+    goto error;
+        }
+        hwloc_linux_knl_add_cluster(topology, nodes[0], NULL, &hwdata, mscache_as_l3, 4, failednodes);
+        hwloc_linux_knl_add_cluster(topology, nodes[1], NULL, &hwdata, mscache_as_l3, 4, failednodes);
+        hwloc_linux_knl_add_cluster(topology, nodes[2], NULL, &hwdata, mscache_as_l3, 4, failednodes);
+        hwloc_linux_knl_add_cluster(topology, nodes[3], NULL, &hwdata, mscache_as_l3, 4, failednodes);
+
+      } else {
+        /* SNC4-Flat/Hybrid */
+        unsigned ddr[4], mcdram[4];
+        if (nbnodes != 8) {
+          if (hwloc_hide_errors() < 2)
+            fprintf(stderr, "hwloc/linux: Found %u NUMA nodes instead of 2 in mode %s-%s\n", nbnodes, hwdata.cluster_mode, hwdata.memory_mode);
+    goto error;
+        }
+        if (hwloc_linux_knl_identify_8nodes(distances, &dist, ddr, mcdram) < 0) {
+          if (hwloc_hide_errors() < 2)
+            fprintf(stderr, "hwloc/linux: Unexpected distance layout for mode %s-%s\n", hwdata.cluster_mode, hwdata.memory_mode);
+    goto error;
+        }
+        if (!strcmp(hwdata.memory_mode, "Flat"))
+    hwdata.mcdram_cache_size = 0;
+        hwloc_linux_knl_add_cluster(topology, nodes[ddr[0]], nodes[mcdram[0]], &hwdata, mscache_as_l3, 4, failednodes);
+        hwloc_linux_knl_add_cluster(topology, nodes[ddr[1]], nodes[mcdram[1]], &hwdata, mscache_as_l3, 4, failednodes);
+        hwloc_linux_knl_add_cluster(topology, nodes[ddr[2]], nodes[mcdram[2]], &hwdata, mscache_as_l3, 4, failednodes);
+        hwloc_linux_knl_add_cluster(topology, nodes[ddr[3]], nodes[mcdram[3]], &hwdata, mscache_as_l3, 4, failednodes);
+      }
     }
   }
 
@@ -4020,7 +4066,7 @@ look_sysfsnode(struct hwloc_topology *topology,
 
       free(indexes);
 
-      if (data->is_knl) {
+      if (data->is_knl || data->is_kunpeng_with_moc) {
 	/* apply KNL quirks */
 	char *env = getenv("HWLOC_KNL_NUMA_QUIRK");
 	int noquirk = (env && !atoi(env));
@@ -5203,6 +5249,8 @@ hwloc_gather_system_info(struct hwloc_topology *topology,
       data->arch = HWLOC_LINUX_ARCH_S390;
     else if (!strcmp(data->utsname.machine, "ia64"))
       data->arch = HWLOC_LINUX_ARCH_IA64;
+    else if (!strncmp(data->utsname.machine, "aarch", 5))
+      data->arch = HWLOC_LINUX_ARCH_ARM;
   }
 }
 
@@ -5462,9 +5510,10 @@ hwloc_linuxfs_look_cpu(struct hwloc_backend *backend, struct hwloc_disc_status *
   /**************************
    * detect model for quirks
    */
-  if (data->arch == HWLOC_LINUX_ARCH_X86 && numprocs > 0) {
+  if (numprocs > 0) {
       unsigned i;
       const char *cpuvendor = NULL, *cpufamilynumber = NULL, *cpumodelnumber = NULL;
+      const char *cpu_implementer, *cpu_part;
       for(i=0; i<Lprocs[0].infos_count; i++) {
 	if (!strcmp(Lprocs[0].infos[i].name, "CPUVendor")) {
 	  cpuvendor = Lprocs[0].infos[i].value;
@@ -5472,7 +5521,11 @@ hwloc_linuxfs_look_cpu(struct hwloc_backend *backend, struct hwloc_disc_status *
 	  cpufamilynumber = Lprocs[0].infos[i].value;
 	} else if (!strcmp(Lprocs[0].infos[i].name, "CPUModelNumber")) {
 	  cpumodelnumber = Lprocs[0].infos[i].value;
-	}
+  } else if (!strcmp(Lprocs[0].infos[i].name, "CPUImplementer")) {
+    cpu_implementer = Lprocs[0].infos[i].value;
+  } else if (!strcmp(Lprocs[0].infos[i].name, "CPUPart")) {
+      cpu_part = Lprocs[0].infos[i].value;
+  }
       }
       if (cpuvendor && !strcmp(cpuvendor, "GenuineIntel")
 	  && cpufamilynumber && !strcmp(cpufamilynumber, "6")
@@ -5484,6 +5537,10 @@ hwloc_linuxfs_look_cpu(struct hwloc_backend *backend, struct hwloc_disc_status *
 	  && (!strcmp(cpufamilynumber, "21")
 	      || !strcmp(cpufamilynumber, "22")))
 	data->is_amd_with_CU = 1;
+    if (cpu_implementer && !strcmp(cpu_implementer, "0x48")
+    && cpu_part && !strcmp(cpu_part, "0xd22")) {
+  data->is_kunpeng_with_moc = 1;
+    }
   }
 
   /**********************
@@ -7024,6 +7081,7 @@ hwloc_linux_component_instantiate(struct hwloc_topology *topology,
   /* default values */
   data->arch = HWLOC_LINUX_ARCH_UNKNOWN;
   data->is_knl = 0;
+  data->is_kunpeng_with_moc = 0;
   data->is_amd_with_CU = 0;
   data->is_real_fsroot = 1;
   data->root_path = NULL;
