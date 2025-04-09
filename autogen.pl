@@ -1632,13 +1632,13 @@ if (list_contains("hwloc", @disabled_3rdparty_packages)) {
     verbose "--- hwloc disabled\n";
 } else {
     my $hwloc_directory = "hwloc-" . $hwloc_version;
-    my $hwloc_tarball = $hwloc_directory . ".tar.gz";
-    if (! -f "3rd-party/" . $hwloc_tarball) {
-        my_die("Could not find hwloc tarball\n");
+    if (! -f "3rd-party/$hwloc_directory/configure.ac") {
+        my_die("Could not find hwloc files\n");
     }
+    push(@subdirs, "3rd-party/$hwloc_directory/");
     $m4 .= "m4_define([package_hwloc], [1])\n";
-    $m4 .= "m4_define([hwloc_tarball], [" . $hwloc_tarball . "])\n";
     $m4 .= "m4_define([hwloc_directory], [" . $hwloc_directory . "])\n";
+    
     verbose "--- hwloc enabled (" . $hwloc_version . ")\n";
 }
 
