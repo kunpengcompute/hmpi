@@ -1096,6 +1096,7 @@ OMPI_DECLSPEC extern struct ompi_predefined_datatype_t ompi_mpi_real2;
 OMPI_DECLSPEC extern struct ompi_predefined_datatype_t ompi_mpi_real4;
 OMPI_DECLSPEC extern struct ompi_predefined_datatype_t ompi_mpi_real8;
 OMPI_DECLSPEC extern struct ompi_predefined_datatype_t ompi_mpi_real16;
+OMPI_DECLSPEC extern struct ompi_predefined_datatype_t ompi_mpi_complex4;
 OMPI_DECLSPEC extern struct ompi_predefined_datatype_t ompi_mpi_complex8;
 OMPI_DECLSPEC extern struct ompi_predefined_datatype_t ompi_mpi_complex16;
 OMPI_DECLSPEC extern struct ompi_predefined_datatype_t ompi_mpi_complex32;
@@ -1246,6 +1247,9 @@ OMPI_DECLSPEC extern struct ompi_predefined_datatype_t ompi_mpi_ub;
 #define MPI_INTEGER16 OMPI_PREDEFINED_GLOBAL(MPI_Datatype, ompi_mpi_integer16)
 #endif
 #define MPI_REAL OMPI_PREDEFINED_GLOBAL(MPI_Datatype, ompi_mpi_real)
+#if OMPI_HAVE_FORTRAN_REAL2
+#define MPI_REAL2 OMPI_PREDEFINED_GLOBAL(MPI_Datatype, ompi_mpi_real2)
+#endif
 #if OMPI_HAVE_FORTRAN_REAL4
 #define MPI_REAL4 OMPI_PREDEFINED_GLOBAL(MPI_Datatype, ompi_mpi_real4)
 #endif
@@ -1257,6 +1261,9 @@ OMPI_DECLSPEC extern struct ompi_predefined_datatype_t ompi_mpi_ub;
 #endif
 #define MPI_DOUBLE_PRECISION OMPI_PREDEFINED_GLOBAL(MPI_Datatype, ompi_mpi_dblprec)
 #define MPI_COMPLEX OMPI_PREDEFINED_GLOBAL(MPI_Datatype, ompi_mpi_cplex)
+#if OMPI_HAVE_FORTRAN_REAL2
+#define MPI_COMPLEX4 OMPI_PREDEFINED_GLOBAL(MPI_Datatype, ompi_mpi_complex4)
+#endif
 #if OMPI_HAVE_FORTRAN_REAL4
 #define MPI_COMPLEX8 OMPI_PREDEFINED_GLOBAL(MPI_Datatype, ompi_mpi_complex8)
 #endif

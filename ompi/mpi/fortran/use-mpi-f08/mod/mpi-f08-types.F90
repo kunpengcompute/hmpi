@@ -203,6 +203,7 @@ module mpi_f08_types
   type(MPI_Datatype), parameter   :: MPI_CXX_BOOL                = MPI_Datatype(OMPI_MPI_CXX_BOOL)
   type(MPI_Datatype), parameter   :: MPI_COUNT                   = MPI_Datatype(OMPI_MPI_COUNT)
   type(MPI_Datatype), parameter   :: MPI_OFFSET                  = MPI_Datatype(OMPI_MPI_OFFSET)
+  type(MPI_Datatype), parameter   :: MPI_COMPLEX4                = MPI_Datatype(OMPI_MPI_COMPLEX4)
 
 !... Special sentinel constants
 !------------------------------

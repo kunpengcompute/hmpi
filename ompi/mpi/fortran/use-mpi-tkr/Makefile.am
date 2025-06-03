@@ -16,6 +16,7 @@
 # Copyright (c) 2014-2016 Research Organization for Information Science
 #                         and Technology (RIST). All rights reserved.
 # Copyright (c) 2016      IBM Corporation.  All rights reserved.
+# Copyright (c) 2018      FUJITSU LIMITED.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -127,7 +128,9 @@ mpi-tkr-sizeof.h:
 	    --header=$@ --ierror=mandatory \
 	    --maxrank=$(OMPI_FORTRAN_MAX_ARRAY_RANK) \
 	    --generate=$(OMPI_FORTRAN_BUILD_SIZEOF) \
+	    --real2=$(OMPI_HAVE_FORTRAN_REAL2) \
 	    --real16=$(OMPI_HAVE_FORTRAN_REAL16) \
+	    --complex4=$(OMPI_HAVE_FORTRAN_COMPLEX4) \
 	    --complex32=$(OMPI_HAVE_FORTRAN_COMPLEX32)
 
 mpi-tkr-sizeof.f90: $(top_builddir)/config.status
@@ -137,7 +140,9 @@ mpi-tkr-sizeof.f90:
 	    --impl=$@ --ierror=mandatory --mpi --pmpi \
 	    --maxrank=$(OMPI_FORTRAN_MAX_ARRAY_RANK) \
 	    --generate=$(OMPI_FORTRAN_BUILD_SIZEOF) \
+	    --real2=$(OMPI_HAVE_FORTRAN_REAL2) \
 	    --real16=$(OMPI_HAVE_FORTRAN_REAL16) \
+	    --complex4=$(OMPI_HAVE_FORTRAN_COMPLEX4) \
 	    --complex32=$(OMPI_HAVE_FORTRAN_COMPLEX32)
 
 #

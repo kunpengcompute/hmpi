@@ -189,11 +189,8 @@ static inline ucg_dt_type_t ompi_dt_2_ucg_dt_type(ompi_datatype_t *ompi_dt)
             return UCG_DT_TYPE_UINT32;
         case OMPI_DATATYPE_MPI_UINT64_T:
             return UCG_DT_TYPE_UINT64;
-
-#if OMPI_MAJOR_VERSION > 4
         case OMPI_DATATYPE_MPI_SHORT_FLOAT:
             return UCG_DT_TYPE_FP16;
-#endif
         case OMPI_DATATYPE_MPI_FLOAT:
             return UCG_DT_TYPE_FP32;
         case OMPI_DATATYPE_MPI_DOUBLE:
