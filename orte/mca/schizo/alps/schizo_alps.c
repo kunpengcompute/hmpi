@@ -98,6 +98,7 @@ static orte_schizo_launch_environ_t check_launch_environment(void)
                                            running on a mom node, for example) */
             opal_argv_append_nosize(&pushed_envs, OPAL_MCA_PREFIX"pmix");
             opal_argv_append_nosize(&pushed_vals, "cray");
+            fclose(fd_task_is_app);
         }
         fclose(fd);
     }

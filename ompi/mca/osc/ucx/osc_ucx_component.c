@@ -239,12 +239,12 @@ static int component_finalize(void) {
     }
 
     assert(mca_osc_ucx_component.num_incomplete_req_ops == 0);
+    if (NULL != mca_osc_ucx_component.ucp_context) {
+        ucp_cleanup(mca_osc_ucx_component.ucp_context);
+        mca_osc_ucx_component.ucp_context = NULL;
+    }
     if (mca_osc_ucx_component.env_initialized == true) {
         OBJ_DESTRUCT(&mca_osc_ucx_component.requests);
-        if (NULL != mca_osc_ucx_component.ucp_context) {
-            ucp_cleanup(mca_osc_ucx_component.ucp_context);
-            mca_osc_ucx_component.ucp_context = NULL;
-        }
         mca_osc_ucx_component.env_initialized = false;
     }
 

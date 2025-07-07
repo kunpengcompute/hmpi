@@ -770,6 +770,9 @@ static simp_state donau_nodelist_simp(char *node_list, char *nodelist_result) {
         }
         strcpy(node[temp_num].name, temp_s);
         temp_num++;
+        if (temp_num >= DONAU_MAX_NODELIST_LENGTH) {
+            return SIMP_OUT_OF_RESOURCE;
+        }
     }
     for (int i = 0; i < temp_num; i++) {
         node[i].len = strlen(node[i].name);
@@ -801,6 +804,9 @@ static simp_state donau_nodelist_simp(char *node_list, char *nodelist_result) {
                 }
                 strcat(nodelist_result, temp_str);
                 if (i < temp_num || i == temp_num && stack_size > 1) {
+                    if(strlen(nodelist_result) + 1 >= DONAU_MAX_NODELIST_LENGTH) {
+                        return SIMP_OUT_OF_RESOURCE;
+                    }
                     strcat(nodelist_result, ",");
                 }
                 stack_size--;
@@ -849,6 +855,9 @@ static simp_state donau_nodelist_simp(char *node_list, char *nodelist_result) {
                 }
                 strcat(nodelist_result, temp_str);
                 if (i < temp_num) {
+                    if(strlen(nodelist_result) + 1 >= DONAU_MAX_NODELIST_LENGTH) {
+                        return SIMP_OUT_OF_RESOURCE;
+                    }
                     strcat(nodelist_result, ",");
                 }
             }
