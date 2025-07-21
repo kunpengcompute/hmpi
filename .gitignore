@@ -302,6 +302,9 @@ ompi/mpiext/cuda/c/mpiext_cuda_c.h
 
 ompi/mpiext/pcollreq/c/MPIX_*.3
 
+ompi/mpiext/shortfloat/c/mpiext_shortfloat_c.h
+ompi/mpiext/shortfloat/mpif-h/mpiext_shortfloat_mpifh.h
+ompi/mpiext/shortfloat/use-mpi-f08/mpiext_shortfloat_usempif08.h
 ompi/tools/mpisync/mpisync
 ompi/tools/mpisync/mpirun_prof
 ompi/tools/mpisync/ompi_timing_post
