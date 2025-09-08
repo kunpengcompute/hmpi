@@ -87,7 +87,9 @@ static int nbc_neighbor_alltoall_init(const void *sbuf, int scount, MPI_Datatype
       return res;
     }
 
-    for (int i = 0 ; i < indegree ; ++i) {
+    /* change recv order to solve the problem of opposite results in loop neigbor under 2 processes */
+    /* issue can see https://github.com/mpi-forum/mpi-issues/issues/153 */
+    for (int i = indegree - 1 ; i >= 0 ; --i) {
       if (MPI_PROC_NULL != srcs[i]) {
         res = NBC_Sched_recv ((char *) rbuf + (MPI_Aint) rcvext * i * rcount, true, rcount, rtype, srcs[i], schedule, false);
         if (OPAL_UNLIKELY(OMPI_SUCCESS != res)) {
