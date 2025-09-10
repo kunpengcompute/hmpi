@@ -19,6 +19,7 @@
  *
  */
 #include "nbc_internal.h"
+#include "ompi/mca/topo/base/base.h"
 
 /* cannot cache schedules because one cannot check locally if the pattern is the same!! */
 #undef NBC_CACHE_SCHEDULE
@@ -93,28 +94,28 @@ static int nbc_neighbor_alltoallv_init(const void *sbuf, const int *scounts, con
     /* simply loop over neighbors and post send/recv operations */
     /* change recv order to solve the problem of opposite results in loop neigbor under 2 processes */
     /* issue can see https://github.com/mpi-forum/mpi-issues/issues/153 */
-    int flag = 0;
+    /* comm is cart and process of a certain dim is 1 need to special handle */
+    bool is_cart_dim_one = false;
     if (OMPI_COMM_IS_CART(comm)) {
-      for(int dim = 0; dim <comm->c_topo->mtc.cart->ndims; dim++) {
+      for(int dim = 0 ; dim <comm->c_topo->mtc.cart->ndims ; ++dim) {
         if (comm->c_topo->mtc.cart->dims[dim] == 1) {
-          flag = 1;
+          is_cart_dim_one = true;
           break;
         }
       }
     }
-    if (flag != 0) {
-      for (int dim = 0; dim < comm->c_topo->mtc.cart->ndims; dim++) {
-        if (MPI_PROC_NULL != srcs[2 * dim + 1]) {
-          res = NBC_Sched_recv ((char *) rbuf + rdispls[2 * dim + 1] * rcvext, false, rcounts[2 * dim + 1], rtype, srcs[2 * dim + 1], schedule, false);
-          if (OPAL_UNLIKELY(OMPI_SUCCESS != res)) {
-            break;
+    if (is_cart_dim_one) {
+      for (int dim = 0 ; dim < comm->c_topo->mtc.cart->ndims ; ++dim) {
+        for (int i = 1 ; i >= 0 ; --i) {
+          if (MPI_PROC_NULL != srcs[2 * dim + i]) {
+            res = NBC_Sched_recv ((char *) rbuf + rdispls[2 * dim + i] * rcvext, false, rcounts[2 * dim + i], rtype, srcs[2 * dim + i], schedule, false);
+            if (OPAL_UNLIKELY(OMPI_SUCCESS != res)) {
+              break;
+            }
           }
         }
-        if (MPI_PROC_NULL != srcs[2 * dim]) {
-          res = NBC_Sched_recv ((char *) rbuf + rdispls[2 * dim] * rcvext, false, rcounts[2 * dim], rtype, srcs[2 * dim], schedule, false);
-          if (OPAL_UNLIKELY(OMPI_SUCCESS != res)) {
-            break;
-          }
+        if (OPAL_UNLIKELY(OMPI_SUCCESS != res)) {
+          break;
         }
       }
     } else {
