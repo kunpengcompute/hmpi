@@ -89,11 +89,37 @@ static int nbc_neighbor_alltoall_init(const void *sbuf, int scount, MPI_Datatype
 
     /* change recv order to solve the problem of opposite results in loop neigbor under 2 processes */
     /* issue can see https://github.com/mpi-forum/mpi-issues/issues/153 */
-    for (int i = indegree - 1 ; i >= 0 ; --i) {
-      if (MPI_PROC_NULL != srcs[i]) {
-        res = NBC_Sched_recv ((char *) rbuf + (MPI_Aint) rcvext * i * rcount, true, rcount, rtype, srcs[i], schedule, false);
-        if (OPAL_UNLIKELY(OMPI_SUCCESS != res)) {
+    int flag = 0;
+    if (OMPI_COMM_IS_CART(comm)) {
+      for(int dim = 0; dim <comm->c_topo->mtc.cart->ndims; dim++) {
+        if (comm->c_topo->mtc.cart->dims[dim] == 1) {
+          flag = 1;
           break;
+        }
+      }
+    }
+    if (flag != 0) {
+      for (int dim = 0; dim < comm->c_topo->mtc.cart->ndims; dim++) {
+        if (MPI_PROC_NULL != srcs[2 * dim + 1]) {
+          res = NBC_Sched_recv ((char *) rbuf + (MPI_Aint) rcvext * (2 * dim + 1) * rcount, true, rcount, rtype, srcs[2 * dim + 1], schedule, false);
+          if (OPAL_UNLIKELY(OMPI_SUCCESS != res)) {
+            break;
+          }
+        }
+        if (MPI_PROC_NULL != srcs[2 * dim]) {
+          res = NBC_Sched_recv ((char *) rbuf + (MPI_Aint) rcvext * (2 * dim) * rcount, true, rcount, rtype, srcs[2 * dim], schedule, false);
+          if (OPAL_UNLIKELY(OMPI_SUCCESS != res)) {
+            break;
+          }
+        }
+      }
+    } else {
+      for (int i = indegree - 1 ; i >= 0 ; --i) {
+        if (MPI_PROC_NULL != srcs[i]) {
+          res = NBC_Sched_recv ((char *) rbuf + (MPI_Aint) rcvext * i * rcount, true, rcount, rtype, srcs[i], schedule, false);
+          if (OPAL_UNLIKELY(OMPI_SUCCESS != res)) {
+            break;
+          }
         }
       }
     }
