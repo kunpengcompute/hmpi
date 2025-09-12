@@ -178,7 +178,7 @@ component_query(struct ompi_win_t *win, void **base, size_t size, int disp_unit,
         return ret;
     }
 
-    return 100;
+    return 50;
 }
 
 
