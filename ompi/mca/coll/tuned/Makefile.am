@@ -20,6 +20,8 @@
 # $HEADER$
 #
 
+SUBDIRS = etc
+
 sources = \
         coll_tuned.h \
         coll_tuned_dynamic_file.h \

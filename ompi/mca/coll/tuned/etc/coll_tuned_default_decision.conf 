@@ -1,0 +1,410 @@
+#######################################################################################
+############################## RULES FILE TEMPLATE ####################################
+#######################################################################################
+
+9   # num of collectives
+
+#######################################################################################
+############################### 1st COLLECTIVE RULES ##################################
+#######################################################################################
+
+# Start 1st collective rules
+
+0   # ID = 0 ALLGATHER collective
+5   # number of com sizes
+
+############################## 1st COMMUNICATOR #####################################
+
+# Thresholds for COMM_SIZE_1
+
+0   # comm sizes 0 (comm_size < 128)
+0   # number of msg sizes
+
+# Thresholds for COMM_SIZE_2
+
+128  # comm sizes 128 (128 <= comm_size < 256)
+2    # number of msg sizes
+0 2 0 0       # for message size 0, bruck 2, topo 0, 0 segmentation
+524288 3 0 0  # for message size 524288, recursive_doubling 3, topo 0, 0 segmentation
+
+# Thresholds for COMM_SIZE_3
+
+256 # comm sizes 256 (256 <= comm_size < 512)
+0   # number of msg sizes
+
+# Thresholds for COMM_SIZE_4
+
+512  # comm sizes 512 (512 <= comm_size < 1024)
+3    # number of msg sizes
+0 2 0 0       # for message size 0, bruck 2, topo 0, 0 segmentation
+2048 3 0 0    # for message size 2048, recursive_doubling 3, topo 0, 0 segmentation
+524288 5 0 0  # for message size 524288, neighbor 5, topo 0, 0 segmentation
+
+# Thresholds for COMM_SIZE_5
+
+1024 # comm sizes 1024 (1024 <= comm_size)
+0    # number of msg sizes
+
+# End of 1st communicator
+
+#######################################################################################
+############################## 2nd COLLECTIVE RULES ###################################
+#######################################################################################
+
+# Start 2nd collective rules
+
+1   # ID = 1 ALLGATHERV collective
+5   # number of com sizes
+
+############################## 2nd COMMUNICATOR #####################################
+
+# Thresholds for COMM_SIZE_1
+
+0   # comm sizes 0 (comm_size < 128)
+0   # number of msg sizes
+
+# Thresholds for COMM_SIZE_2
+
+128  # comm sizes 128 (128 <= comm_size < 256)
+3    # number of msg sizes
+0 1 0 0       # for message size 0, default 1, topo 0, 0 segmentation
+262144 2 0 0  # for message size 262144, bruck 2, topo 0, 0 segmentation
+524288 1 0 0  # for message size 524288, default 1, topo 0, 0 segmentation
+
+# Thresholds for COMM_SIZE_3
+
+256 # comm sizes 256 (256 <= comm_size < 512)
+0   # number of msg sizes
+
+# Thresholds for COMM_SIZE_4
+
+512  # comm sizes 512 (512 <= comm_size < 1024)
+1    # number of msg sizes
+0 2 0 0       # for message size 0, bruck 2, topo 0, 0 segmentation
+
+# Thresholds for COMM_SIZE_5
+
+1024 # comm sizes 1024 (1024 <= comm_size)
+0    # number of msg sizes
+
+# End of 2nd communicator
+
+#######################################################################################
+############################## 3rd COLLECTIVE RULES ###################################
+#######################################################################################
+
+# Start 3rd collective rules
+
+2   # ID = 2 ALLREDUCE collective
+5   # number of com sizes
+
+############################## 3rd COMMUNICATOR #####################################
+
+# Thresholds for COMM_SIZE_1
+
+0   # comm sizes 0 (comm_size < 128)
+0   # number of msg sizes
+
+# Thresholds for COMM_SIZE_2
+
+128  # comm sizes 128 (128 <= comm_size < 256)
+3    # number of msg sizes
+0 4 0 0       # for message size 0, ring 4, topo 0, 0 segmentation
+8 3 0 0       # for message size 8, recursive_doubling 3, topo 0, 0 segmentation
+2048 6 0 0    # for message size 2048, rabenseifner 6, topo 0, 0 segmentation
+
+# Thresholds for COMM_SIZE_3
+
+256 # comm sizes 256 (256 <= comm_size < 512)
+0   # number of msg sizes
+
+# Thresholds for COMM_SIZE_4
+
+512  # comm sizes 512 (512 <= comm_size < 1024)
+3    # number of msg sizes
+0 5 0 0       # for message size 0, segmented_ring 5, topo 0, 0 segmentation
+8 3 0 0       # for message size 8, recursive_doubling 3, topo 0, 0 segmentation
+64 2 0 0      # for message size 64, nonoverlapping 2, topo 0, 0 segmentation
+16384 6 0 0   # for message size 16384, rabenseifner 6, topo 0, 0 segmentation
+
+# Thresholds for COMM_SIZE_5
+
+1024 # comm sizes 1024 (1024 <= comm_size)
+0    # number of msg sizes
+
+# End of 3rd communicator
+
+#######################################################################################
+############################## 4th COLLECTIVE RULES ###################################
+#######################################################################################
+
+# Start 4th collective rules
+
+3   # ID = 3 ALLTOALL collective
+5   # number of com sizes
+
+############################## 4th COMMUNICATOR #####################################
+
+# Thresholds for COMM_SIZE_1
+
+0   # comm sizes 0 (comm_size < 128)
+0   # number of msg sizes
+
+# Thresholds for COMM_SIZE_2
+
+128  # comm sizes 128 (128 <= comm_size < 256)
+6    # number of msg sizes
+0 3 0 0         # for message size 0, modified_bruck 3, topo 0, 0 segmentation
+256 1 0 0       # for message size 256, linear 1, topo 0, 0 segmentation
+512 4 0 0       # for message size 512, linear_sync 4, topo 0, 0 segmentation
+2048 1 0 0      # for message size 2048, linear 1, topo 0, 0 segmentation
+8192 4 0 0      # for message size 8192, linear_sync 4, topo 0, 0 segmentation
+32768 1 0 0     # for message size 32768, linear 1, topo 0, 0 segmentation
+
+# Thresholds for COMM_SIZE_3
+
+256 # comm sizes 256 (256 <= comm_size < 512)
+0   # number of msg sizes
+
+# Thresholds for COMM_SIZE_4
+
+512  # comm sizes 512 (512 <= comm_size < 1024)
+5    # number of msg sizes
+0 3 0 0       # for message size 0, modified_bruck 3, topo 0, 0 segmentation
+512 4 0 0     # for message size 512, linear_sync 4, topo 0, 0 segmentation
+16384 2 0 0   # for message size 16384, pairwise 2, topo 0, 0 segmentation
+262144 4 0 0  # for message size 262144, linear_sync 4, topo 0, 0 segmentation
+524288 2 0 0  # for message size 524288, pairwise 2, topo 0, 0 segmentation
+
+# Thresholds for COMM_SIZE_5
+
+1024 # comm sizes 1024 (1024 <= comm_size)
+0    # number of msg sizes
+
+# End of 4th communicator
+
+#######################################################################################
+############################## 5th COLLECTIVE RULES ###################################
+#######################################################################################
+
+# Start 5th collective rules
+
+4   # ID = 4 ALLTOALLV collective
+5   # number of com sizes
+
+############################## 5th COMMUNICATOR #####################################
+
+# Thresholds for COMM_SIZE_1
+
+0   # comm sizes 0 (comm_size < 128)
+0   # number of msg sizes
+
+# Thresholds for COMM_SIZE_2
+
+128  # comm sizes 128 (128 <= comm_size < 256)
+3    # number of msg sizes
+0 1 0 0         # for message size 0, basic_linear 1, topo 0, 0 segmentation
+16384 2 0 0     # for message size 16384, pairwise 2, topo 0, 0 segmentation
+32768 1 0 0     # for message size 32768, basic_linear 1, topo 0, 0 segmentation
+
+
+# Thresholds for COMM_SIZE_3
+
+256 # comm sizes 256 (256 <= comm_size < 512)
+0   # number of msg sizes
+
+# Thresholds for COMM_SIZE_4
+
+512  # comm sizes 512 (512 <= comm_size < 1024)
+2    # number of msg sizes
+0 1 0 0       # for message size 0, basic_linear 1, topo 0, 0 segmentation
+8192 2 0 0    # for message size 8192, pairwise 2, topo 0, 0 segmentation
+
+# Thresholds for COMM_SIZE_5
+
+1024 # comm sizes 1024 (1024 <= comm_size)
+0    # number of msg sizes
+
+# End of 5th communicator
+
+#######################################################################################
+############################## 6th COLLECTIVE RULES ###################################
+#######################################################################################
+
+# Start 6th collective rules
+
+7   # ID = 7 BCAST collective
+5   # number of com sizes
+
+############################## 6th COMMUNICATOR #####################################
+
+# Thresholds for COMM_SIZE_1
+
+0   # comm sizes 0 (comm_size < 128)
+0   # number of msg sizes
+
+# Thresholds for COMM_SIZE_2
+
+128  # comm sizes 128 (128 <= comm_size < 256)
+5    # number of msg sizes
+0 6 0 0         # for message size 0, binomial 6, topo 0, 0 segmentation
+16384 4 0 0     # for message size 16384, split_binary_tree 4, topo 0, 0 segmentation
+32768 8 0 0     # for message size 32768, scatter_allgather 8, topo 0, 0 segmentation
+65536 7 0 0     # for message size 65536, knomial 7, topo 0, 0 segmentation
+524288 6 0 0    # for message size 524288, binomial 6, topo 0, 0 segmentation
+
+# Thresholds for COMM_SIZE_3
+
+256 # comm sizes 256 (256 <= comm_size < 512)
+0   # number of msg sizes
+
+# Thresholds for COMM_SIZE_4
+
+512  # comm sizes 512 (512 <= comm_size < 1024)
+4    # number of msg sizes
+0 6 0 0         # for message size 0, binomial 6, topo 0, 0 segmentation
+16384 4 0 0     # for message size 16384, split_binary_tree 4, topo 0, 0 segmentation
+32768 8 0 0     # for message size 32768, scatter_allgather 8, topo 0, 0 segmentation
+1048576 4 0 0   # for message size 1048576, split_binary_tree 4, topo 0, 0 segmentation
+
+# Thresholds for COMM_SIZE_5
+
+1024 # comm sizes 1024 (1024 <= comm_size)
+0    # number of msg sizes
+
+# End of 6th communicator
+
+#######################################################################################
+############################## 7th COLLECTIVE RULES ###################################
+#######################################################################################
+
+# Start 7th collective rules
+
+9   # ID = 9 GATHER collective
+5   # number of com sizes
+
+############################## 7th COMMUNICATOR #####################################
+
+# Thresholds for COMM_SIZE_1
+
+0   # comm sizes 0 (comm_size < 128)
+0   # number of msg sizes
+
+# Thresholds for COMM_SIZE_2
+
+128  # comm sizes 128 (128 <= comm_size < 256)
+3    # number of msg sizes
+0 1 0 0         # for message size 0, basic_linear 1, topo 0, 0 segmentation
+262144 2 0 0    # for message size 262144, binomial 2, topo 0, 0 segmentation
+524288 1 0 0    # for message size 524288, basic_linear 1, topo 0, 0 segmentation
+
+# Thresholds for COMM_SIZE_3
+
+256 # comm sizes 256 (256 <= comm_size < 512)
+0   # number of msg sizes
+
+# Thresholds for COMM_SIZE_4
+
+512  # comm sizes 512 (512 <= comm_size < 1024)
+2    # number of msg sizes
+0 1 0 0         # for message size 0, basic_linear 1, topo 0, 0 segmentation
+65536 2 0 0     # for message size 65536, binomial 2, topo 0, 0 segmentation
+
+# Thresholds for COMM_SIZE_5
+
+1024 # comm sizes 1024 (1024 <= comm_size)
+0    # number of msg sizes
+
+# End of 7th communicator
+
+#######################################################################################
+############################## 8th COLLECTIVE RULES ###################################
+#######################################################################################
+
+# Start 8th collective rules
+
+11   # ID = 11 REDUCE collective
+5   # number of com sizes
+
+############################## 8th COMMUNICATOR #####################################
+
+# Thresholds for COMM_SIZE_1
+
+0   # comm sizes 0 (comm_size < 128)
+0   # number of msg sizes
+
+# Thresholds for COMM_SIZE_2
+
+128  # comm sizes 128 (128 <= comm_size < 256)
+3    # number of msg sizes
+0 7 0 0         # for message size 0, rabenseifner 7, topo 0, 0 segmentation
+256 1 0 0       # for message size 256, linear 1, topo 0, 0 segmentation
+262144 5 0 0    # for message size 262144, binomial 5, topo 0, 0 segmentation
+
+# Thresholds for COMM_SIZE_3
+
+256 # comm sizes 256 (256 <= comm_size < 512)
+0   # number of msg sizes
+
+# Thresholds for COMM_SIZE_4
+
+512  # comm sizes 512 (512 <= comm_size < 1024)
+7    # number of msg sizes
+0 1 0 0         # for message size 0, linear 1, topo 0, 0 segmentation
+128 7 0 0       # for message size 128, rabenseifner 7, topo 0, 0 segmentation
+512 1 0 0       # for message size 512, linear 1, topo 0, 0 segmentation
+32768 4 0 0     # for message size 32768, binary 4, topo 0, 0 segmentation
+65536 5 0 0     # for message size 65536, binomial 5, topo 0, 0 segmentation
+131072 4 0 0    # for message size 131072, binary 4, topo 0, 0 segmentation
+262144 5 0 0    # for message size 262144, binomial 5, topo 0, 0 segmentation
+
+# Thresholds for COMM_SIZE_5
+
+1024 # comm sizes 1024 (1024 <= comm_size)
+0    # number of msg sizes
+
+# End of 8th communicator
+
+#######################################################################################
+############################## 9th COLLECTIVE RULES ###################################
+#######################################################################################
+
+# Start 9th collective rules
+
+15   # ID = 15 SCATTER collective
+5   # number of com sizes
+
+############################## 9th COMMUNICATOR #####################################
+
+# Thresholds for COMM_SIZE_1
+
+0   # comm sizes 0 (comm_size < 128)
+0   # number of msg sizes
+
+# Thresholds for COMM_SIZE_2
+
+128  # comm sizes 128 (128 <= comm_size < 256)
+4    # number of msg sizes
+0 2 0 0         # for message size 0, binomial 2, topo 0, 0 segmentation
+1024 1 0 0      # for message size 1024, basic_linear 1, topo 0, 0 segmentation
+2048 2 0 0      # for message size 2048, binomial 2, topo 0, 0 segmentation
+32768 3 0 0     # for message size 32768, linear_nb 3, topo 0, 0 segmentation
+
+# Thresholds for COMM_SIZE_3
+
+256 # comm sizes 256 (256 <= comm_size < 512)
+0   # number of msg sizes
+
+# Thresholds for COMM_SIZE_4
+
+512  # comm sizes 512 (512 <= comm_size < 1024)
+2    # number of msg sizes
+0 2 0 0         # for message size 0, binomial 2, topo 0, 0 segmentation
+8192 1 0 0       # for message size 128, basic_linear 1, topo 0, 0 segmentation
+
+# Thresholds for COMM_SIZE_5
+
+1024 # comm sizes 1024 (1024 <= comm_size)
+0    # number of msg sizes
+
+# End of 9th communicator
