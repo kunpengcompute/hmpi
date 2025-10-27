@@ -427,9 +427,10 @@ static ucp_ep_h mca_pml_ucx_add_proc_common(ompi_proc_t *proc)
     ep_params.field_mask = UCP_EP_PARAM_FIELD_REMOTE_ADDRESS;
     ep_params.address    = address;
 
+    /* fix the issue where hostname is null pointer when using multiple threads */
     ep_params.field_mask   |= UCP_EP_PARAM_FIELD_PEER_HOST_ADDR;
     ep_params.vpid          = proc->super.proc_name.vpid;
-    ep_params.peer_hostname = proc->super.proc_hostname;
+    ep_params.peer_hostname = opal_get_proc_hostname(&proc->super);
 
     status = ucp_ep_create(ompi_pml_ucx.ucp_worker, &ep_params, &ep);
     free(address);
