@@ -101,6 +101,8 @@ typedef enum {
     MCA_COLL_UCG_TYPE_IALLREDUCE,
     MCA_COLL_UCG_TYPE_ALLTOALLV,
     MCA_COLL_UCG_TYPE_IALLTOALLV,
+    MCA_COLL_UCG_TYPE_SCATTER,
+    MCA_COLL_UCG_TYPE_ISCATTER,
     MCA_COLL_UCG_TYPE_SCATTERV,
     MCA_COLL_UCG_TYPE_ISCATTERV,
     MCA_COLL_UCG_TYPE_GATHERV,
@@ -159,6 +161,16 @@ typedef struct mca_coll_alltoallv_args {
     ompi_datatype_t *rdtype;
 } mca_coll_alltoallv_args_t;
 
+typedef struct mca_coll_scatter_args {
+    const void *sbuf;
+    int scount;
+    ompi_datatype_t *sdtype;
+    void *rbuf;
+    int rcount;
+    ompi_datatype_t *rdtype;
+    int root;
+} mca_coll_scatter_args_t;
+
 typedef struct mca_coll_scatterv_args {
     const void *sbuf;
     const int *scounts;
@@ -198,6 +210,7 @@ typedef struct mca_coll_ucg_args {
         mca_coll_bcast_args_t bcast;
         mca_coll_allreduce_args_t allreduce;
         mca_coll_alltoallv_args_t alltoallv;
+        mca_coll_scatter_args_t scatter;
         mca_coll_scatterv_args_t scatterv;
         mca_coll_gatherv_args_t gatherv;
         mca_coll_allgatherv_args_t allgatherv;
