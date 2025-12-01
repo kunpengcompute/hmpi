@@ -77,6 +77,9 @@ extern int libnbc_ibcast_knomial_radix;
 extern int libnbc_iexscan_algorithm;
 extern int libnbc_ireduce_algorithm;
 extern int libnbc_iscan_algorithm;
+extern int libnbc_ialltoall_algorithm;
+extern int libnbc_ialltoallv_algorithm;
+extern int libnbc_ialltoallw_algorithm;
 
 struct ompi_coll_libnbc_component_t {
     mca_coll_base_component_2_0_0_t super;

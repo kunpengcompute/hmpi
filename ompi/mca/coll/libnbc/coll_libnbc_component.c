@@ -100,6 +100,34 @@ static mca_base_var_enum_value_t iscan_algorithms[] = {
     {0, NULL}
 };
 
+int libnbc_ialltoall_algorithm = 0;             /* ialltoall user forced algorithm */
+static mca_base_var_enum_value_t ialltoall_algorithms[] = {
+    {0, "ignore"},
+    {1, "linear"},
+    {2, "pairwise"},
+    {3, "diss"},
+    {4, "inplace"},
+    {0, NULL}
+};
+
+int libnbc_ialltoallv_algorithm = 0;             /* ialltoallv user forced algorithm */
+static mca_base_var_enum_value_t ialltoallv_algorithms[] = {
+    {0, "ignore"},
+    {1, "linear"},
+    {2, "pairwise"},
+    {3, "inplace"},
+    {0, NULL}
+};
+
+int libnbc_ialltoallw_algorithm = 0;             /* ialltoallw user forced algorithm */
+static mca_base_var_enum_value_t ialltoallw_algorithms[] = {
+    {0, "ignore"},
+    {1, "linear"},
+    {2, "pairwise"},
+    {3, "inplace"},
+    {0, NULL}
+};
+
 static int libnbc_open(void);
 static int libnbc_close(void);
 static int libnbc_register(void);
@@ -278,6 +306,36 @@ libnbc_register(void)
                                     MCA_BASE_VAR_TYPE_INT, new_enum, 0, MCA_BASE_VAR_FLAG_SETTABLE,
                                     OPAL_INFO_LVL_5, MCA_BASE_VAR_SCOPE_ALL,
                                     &libnbc_iscan_algorithm);
+    OBJ_RELEASE(new_enum);
+
+    libnbc_ialltoall_algorithm = 0;
+    (void) mca_base_var_enum_create("coll_libnbc_ialltoall_algorithms", ialltoall_algorithms, &new_enum);
+    mca_base_component_var_register(&mca_coll_libnbc_component.super.collm_version,
+                                    "ialltoall_algorithm",
+                                    "Which ialltoall algorithm is used: 0 ignore, 1 linear, 2 inplace, 3 pairwise",
+                                    MCA_BASE_VAR_TYPE_INT, new_enum, 0, MCA_BASE_VAR_FLAG_SETTABLE,
+                                    OPAL_INFO_LVL_5, MCA_BASE_VAR_SCOPE_ALL,
+                                    &libnbc_ialltoall_algorithm);
+    OBJ_RELEASE(new_enum);
+    
+    libnbc_ialltoallv_algorithm = 0;
+    (void) mca_base_var_enum_create("coll_libnbc_ialltoallv_algorithms", ialltoallv_algorithms, &new_enum);
+    mca_base_component_var_register(&mca_coll_libnbc_component.super.collm_version,
+                                    "ialltoallv_algorithm",
+                                    "Which ialltoallv algorithm is used: 0 ignore, 1 linear, 2 pairwise, 3 inplace",
+                                    MCA_BASE_VAR_TYPE_INT, new_enum, 0, MCA_BASE_VAR_FLAG_SETTABLE,
+                                    OPAL_INFO_LVL_5, MCA_BASE_VAR_SCOPE_ALL,
+                                    &libnbc_ialltoallv_algorithm);
+    OBJ_RELEASE(new_enum);
+
+    libnbc_ialltoallw_algorithm = 0;
+    (void) mca_base_var_enum_create("coll_libnbc_ialltoallw_algorithms", ialltoallw_algorithms, &new_enum);
+    mca_base_component_var_register(&mca_coll_libnbc_component.super.collm_version,
+                                    "ialltoallw_algorithm",
+                                    "Which ialltoallw algorithm is used: 0 ignore, 1 linear, 2 pairwise, 3 inplace",
+                                    MCA_BASE_VAR_TYPE_INT, new_enum, 0, MCA_BASE_VAR_FLAG_SETTABLE,
+                                    OPAL_INFO_LVL_5, MCA_BASE_VAR_SCOPE_ALL,
+                                    &libnbc_ialltoallw_algorithm);
     OBJ_RELEASE(new_enum);
 
     return OMPI_SUCCESS;
