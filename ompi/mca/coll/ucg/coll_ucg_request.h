@@ -103,6 +103,8 @@ typedef enum {
     MCA_COLL_UCG_TYPE_IALLTOALLV,
     MCA_COLL_UCG_TYPE_SCATTERV,
     MCA_COLL_UCG_TYPE_ISCATTERV,
+    MCA_COLL_UCG_TYPE_GATHER,
+    MCA_COLL_UCG_TYPE_IGATHER, 
     MCA_COLL_UCG_TYPE_GATHERV,
     MCA_COLL_UCG_TYPE_IGATHERV,
     MCA_COLL_UCG_TYPE_ALLGATHERV,
@@ -170,6 +172,16 @@ typedef struct mca_coll_scatterv_args {
     int root;
 } mca_coll_scatterv_args_t;
 
+typedef struct mca_coll_gather_args {
+    const void *sbuf;
+    int scount;
+    ompi_datatype_t *sdtype;
+    void *rbuf;
+    int rcount;
+    ompi_datatype_t *rdtype;
+    int root;
+} mca_coll_gather_args_t;
+
 typedef struct mca_coll_gatherv_args {
     const void *sbuf;
     int scount;
@@ -199,6 +211,7 @@ typedef struct mca_coll_ucg_args {
         mca_coll_allreduce_args_t allreduce;
         mca_coll_alltoallv_args_t alltoallv;
         mca_coll_scatterv_args_t scatterv;
+        mca_coll_gather_args_t gather;
         mca_coll_gatherv_args_t gatherv;
         mca_coll_allgatherv_args_t allgatherv;
     };

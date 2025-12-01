@@ -56,6 +56,11 @@ static void ucg_coll_ucg_rcache_ref(mca_coll_ucg_req_t *coll_req)
             OMPI_DATATYPE_RETAIN(args->scatterv.sdtype);
             OMPI_DATATYPE_RETAIN(args->scatterv.rdtype);
             break;
+        case MCA_COLL_UCG_TYPE_GATHER:
+        case MCA_COLL_UCG_TYPE_IGATHER:
+            OMPI_DATATYPE_RETAIN(args->gather.sdtype);
+            OMPI_DATATYPE_RETAIN(args->gather.rdtype);
+            break;
         case MCA_COLL_UCG_TYPE_GATHERV:
         case MCA_COLL_UCG_TYPE_IGATHERV:
             OMPI_DATATYPE_RETAIN(args->gatherv.sdtype);
@@ -97,6 +102,11 @@ static void ucg_coll_ucg_rcache_deref(mca_coll_ucg_req_t *coll_req)
         case MCA_COLL_UCG_TYPE_ISCATTERV:
             OMPI_DATATYPE_RELEASE(args->scatterv.sdtype);
             OMPI_DATATYPE_RELEASE(args->scatterv.rdtype);
+            break;
+        case MCA_COLL_UCG_TYPE_GATHER:
+        case MCA_COLL_UCG_TYPE_IGATHER:
+            OMPI_DATATYPE_RELEASE(args->gather.sdtype);
+            OMPI_DATATYPE_RELEASE(args->gather.rdtype);
             break;
         case MCA_COLL_UCG_TYPE_GATHERV:
         case MCA_COLL_UCG_TYPE_IGATHERV:
@@ -504,6 +514,23 @@ static bool mca_coll_ucg_rcache_is_same(const mca_coll_ucg_args_t *key1,
                       args1->sdtype == args2->sdtype &&
                       mca_coll_ucg_rcache_compare(comm_size, args1->scounts, args2->scounts, key2->scounts) &&
                       mca_coll_ucg_rcache_compare(comm_size, args1->disps, args2->disps, key2->sdispls);
+            break;
+        }
+        case MCA_COLL_UCG_TYPE_GATHER:
+        case MCA_COLL_UCG_TYPE_IGATHER: {
+            const mca_coll_gather_args_t *args1 = &key1->gather;
+            const mca_coll_gather_args_t *args2 = &key2->gather;
+            is_same = args1->sbuf == args2->sbuf &&
+                      args1->scount == args2->scount &&
+                      args1->sdtype == args2->sdtype &&
+                      args1->root == args2->root;
+            if (ompi_comm_rank(key1->comm) != args1->root) { // Non-root processes don't compare recv parms
+                break;
+            }
+            is_same = is_same &&
+                      args1->rbuf == args2->rbuf &&
+                      args1->rdtype == args2->rdtype &&
+                      args1->rcount == args2->rcount;
             break;
         }
         case MCA_COLL_UCG_TYPE_GATHERV:

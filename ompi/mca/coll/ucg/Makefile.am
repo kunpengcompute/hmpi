@@ -25,6 +25,7 @@ coll_ucg_sources = \
         coll_ucg_bcast.c \
         coll_ucg_alltoallv.c \
         coll_ucg_scatterv.c \
+        coll_ucg_gather.c \
         coll_ucg_gatherv.c \
         coll_ucg_allgatherv.c
 
