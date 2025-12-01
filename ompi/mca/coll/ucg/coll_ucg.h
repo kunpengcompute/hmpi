@@ -84,6 +84,9 @@ typedef struct {
     mca_coll_base_module_allgatherv_fn_t previous_allgatherv;
     mca_coll_base_module_t *previous_allgatherv_module;
 
+    mca_coll_base_module_reduce_scatter_fn_t previous_reduce_scatter;
+    mca_coll_base_module_t *previous_reduce_scatter_module;
+
     /* non-blocking fallback */
     mca_coll_base_module_iallreduce_fn_t previous_iallreduce;
     mca_coll_base_module_t *previous_iallreduce_module;
@@ -109,6 +112,9 @@ typedef struct {
     mca_coll_base_module_iallgatherv_fn_t previous_iallgatherv;
     mca_coll_base_module_t *previous_iallgatherv_module;
 
+    mca_coll_base_module_ireduce_scatter_fn_t previous_ireduce_scatter;
+    mca_coll_base_module_t *previous_ireduce_scatter_module;
+
     /* persistent fallback */
     mca_coll_base_module_allreduce_init_fn_t previous_allreduce_init;
     mca_coll_base_module_t *previous_allreduce_init_module;
@@ -133,6 +139,9 @@ typedef struct {
 
     mca_coll_base_module_allgatherv_init_fn_t previous_allgatherv_init;
     mca_coll_base_module_t *previous_allgatherv_init_module;
+
+    mca_coll_base_module_reduce_scatter_init_fn_t previous_reduce_scatter_init;
+    mca_coll_base_module_t *previous_reduce_scatter_init_module;
 } mca_coll_ucg_module_t;
 OBJ_CLASS_DECLARATION(mca_coll_ucg_module_t);
 
@@ -352,5 +361,33 @@ int mca_coll_ucg_allgatherv_init(const void *sbuf, int scount, ompi_datatype_t *
                                  ompi_datatype_t *rdtype, ompi_communicator_t *comm,
                                  ompi_info_t *info, ompi_request_t **request,
                                  mca_coll_base_module_t *module);
+
+/* reduce_scatter */
+int mca_coll_ucg_reduce_scatter(const void *sbuf, void *rbuf, const int *rcounts, 
+                                ompi_datatype_t *dtype, ompi_op_t *op,
+                                ompi_communicator_t *comm,
+                                mca_coll_base_module_t *module);
+
+int mca_coll_ucg_reduce_scatter_cache(const void *sbuf, void *rbuf, const int *rcounts, 
+                                      ompi_datatype_t *dtype, ompi_op_t *op,
+                                      ompi_communicator_t *comm,
+                                      mca_coll_base_module_t *module);
+
+int mca_coll_ucg_ireduce_scatter(const void *sbuf, void *rbuf, const int *rcounts, 
+                                 ompi_datatype_t *dtype, ompi_op_t *op,
+                                 ompi_communicator_t *comm,
+                                 ompi_request_t **request, mca_coll_base_module_t *module);
+
+int mca_coll_ucg_ireduce_scatter_cache(const void *sbuf, void *rbuf, const int *rcounts, 
+                                       ompi_datatype_t *dtype, ompi_op_t *op,
+                                       ompi_communicator_t *comm,
+                                       ompi_request_t **request, mca_coll_base_module_t *module);
+
+int mca_coll_ucg_reduce_scatter_init(const void *sbuf, void *rbuf, const int *rcounts, 
+                                     ompi_datatype_t *dtype, ompi_op_t *op,
+                                     ompi_communicator_t *comm,
+                                     ompi_info_t *info, ompi_request_t **request,
+                                     mca_coll_base_module_t *module);
+
 END_C_DECLS
 #endif //MCA_COLL_UCG_H

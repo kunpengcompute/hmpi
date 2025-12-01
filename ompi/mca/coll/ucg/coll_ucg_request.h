@@ -109,6 +109,8 @@ typedef enum {
     MCA_COLL_UCG_TYPE_IGATHERV,
     MCA_COLL_UCG_TYPE_ALLGATHERV,
     MCA_COLL_UCG_TYPE_IALLGATHERV,
+    MCA_COLL_UCG_TYPE_REDUCE_SCATTER,
+    MCA_COLL_UCG_TYPE_IREDUCE_SCATTER,
     MCA_COLL_UCG_TYPE_LAST,
 } mca_coll_ucg_type_t;
 
@@ -203,6 +205,14 @@ typedef struct mca_coll_allgatherv_args {
     ompi_datatype_t *rdtype;
 } mca_coll_allgatherv_args_t;
 
+typedef struct mca_coll_reduce_scatter_args {
+    const void *sbuf;
+    ompi_datatype_t *dtype;
+    void *rbuf;
+    const int *rcounts;
+    ompi_op_t *op;
+} mca_coll_reduce_scatter_args_t;
+
 typedef struct mca_coll_ucg_args {
     mca_coll_ucg_type_t coll_type;
     ompi_communicator_t *comm;
@@ -214,6 +224,7 @@ typedef struct mca_coll_ucg_args {
         mca_coll_gather_args_t gather;
         mca_coll_gatherv_args_t gatherv;
         mca_coll_allgatherv_args_t allgatherv;
+        mca_coll_reduce_scatter_args_t reduce_scatter;
     };
     /* Stores pointers in the rcache, combine with deep copy content */
     const int32_t *scounts;

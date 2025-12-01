@@ -71,6 +71,11 @@ static void ucg_coll_ucg_rcache_ref(mca_coll_ucg_req_t *coll_req)
             OMPI_DATATYPE_RETAIN(args->allgatherv.sdtype);
             OMPI_DATATYPE_RETAIN(args->allgatherv.rdtype);
             break;
+        case MCA_COLL_UCG_TYPE_REDUCE_SCATTER:
+        case MCA_COLL_UCG_TYPE_IREDUCE_SCATTER:
+            OMPI_DATATYPE_RETAIN(args->reduce_scatter.dtype);
+            OMPI_DATATYPE_RETAIN(args->reduce_scatter.dtype);
+            break;
         default:
             UCG_FATAL("Unsupported collective type(%d).", args->coll_type);
             break;
@@ -117,6 +122,11 @@ static void ucg_coll_ucg_rcache_deref(mca_coll_ucg_req_t *coll_req)
         case MCA_COLL_UCG_TYPE_IALLGATHERV:
             OMPI_DATATYPE_RELEASE(args->allgatherv.sdtype);
             OMPI_DATATYPE_RELEASE(args->allgatherv.rdtype);
+            break;
+        case MCA_COLL_UCG_TYPE_REDUCE_SCATTER:
+        case MCA_COLL_UCG_TYPE_IREDUCE_SCATTER:
+            OMPI_DATATYPE_RELEASE(args->reduce_scatter.dtype);
+            OMPI_DATATYPE_RELEASE(args->reduce_scatter.dtype);
             break;
         default:
             UCG_FATAL("Unsupported collective type(%d).", args->coll_type);
@@ -563,6 +573,18 @@ static bool mca_coll_ucg_rcache_is_same(const mca_coll_ucg_args_t *key1,
             is_same = is_same &&
                       mca_coll_ucg_rcache_compare(comm_size, args1->rcounts, args2->rcounts, key2->rcounts) &&
                       mca_coll_ucg_rcache_compare(comm_size, args1->disps, args2->disps, key2->rdispls);
+            break;
+        }
+        case MCA_COLL_UCG_TYPE_REDUCE_SCATTER: 
+        case MCA_COLL_UCG_TYPE_IREDUCE_SCATTER: {
+            const mca_coll_reduce_scatter_args_t *args1 = &key1->reduce_scatter;
+            const mca_coll_reduce_scatter_args_t *args2 = &key2->reduce_scatter;
+            is_same = args1->sbuf == args2->sbuf &&
+                      args1->dtype == args2->dtype &&
+                      args1->rbuf == args2->rbuf &&
+                      args1->op == args2->op;
+            is_same = is_same &&
+                      mca_coll_ucg_rcache_compare(comm_size, args1->rcounts, args2->rcounts, key2->rcounts);
             break;
         }
         default:
