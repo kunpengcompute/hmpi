@@ -56,6 +56,11 @@ static void ucg_coll_ucg_rcache_ref(mca_coll_ucg_req_t *coll_req)
             OMPI_DATATYPE_RETAIN(args->scatterv.sdtype);
             OMPI_DATATYPE_RETAIN(args->scatterv.rdtype);
             break;
+        case MCA_COLL_UCG_TYPE_GATHER:
+        case MCA_COLL_UCG_TYPE_IGATHER:
+            OMPI_DATATYPE_RETAIN(args->gather.sdtype);
+            OMPI_DATATYPE_RETAIN(args->gather.rdtype);
+            break;
         case MCA_COLL_UCG_TYPE_GATHERV:
         case MCA_COLL_UCG_TYPE_IGATHERV:
             OMPI_DATATYPE_RETAIN(args->gatherv.sdtype);
@@ -65,6 +70,16 @@ static void ucg_coll_ucg_rcache_ref(mca_coll_ucg_req_t *coll_req)
         case MCA_COLL_UCG_TYPE_IALLGATHERV:
             OMPI_DATATYPE_RETAIN(args->allgatherv.sdtype);
             OMPI_DATATYPE_RETAIN(args->allgatherv.rdtype);
+            break;
+        case MCA_COLL_UCG_TYPE_REDUCE_SCATTER:
+        case MCA_COLL_UCG_TYPE_IREDUCE_SCATTER:
+            OMPI_DATATYPE_RETAIN(args->reduce_scatter.dtype);
+            OMPI_DATATYPE_RETAIN(args->reduce_scatter.dtype);
+            break;
+        case MCA_COLL_UCG_TYPE_REDUCE_SCATTER_BLOCK:
+        case MCA_COLL_UCG_TYPE_IREDUCE_SCATTER_BLOCK:
+            OMPI_DATATYPE_RETAIN(args->reduce_scatter_block.dtype);
+            OMPI_DATATYPE_RETAIN(args->reduce_scatter_block.dtype);
             break;
         default:
             UCG_FATAL("Unsupported collective type(%d).", args->coll_type);
@@ -98,6 +113,11 @@ static void ucg_coll_ucg_rcache_deref(mca_coll_ucg_req_t *coll_req)
             OMPI_DATATYPE_RELEASE(args->scatterv.sdtype);
             OMPI_DATATYPE_RELEASE(args->scatterv.rdtype);
             break;
+        case MCA_COLL_UCG_TYPE_GATHER:
+        case MCA_COLL_UCG_TYPE_IGATHER:
+            OMPI_DATATYPE_RELEASE(args->gather.sdtype);
+            OMPI_DATATYPE_RELEASE(args->gather.rdtype);
+            break;
         case MCA_COLL_UCG_TYPE_GATHERV:
         case MCA_COLL_UCG_TYPE_IGATHERV:
             OMPI_DATATYPE_RELEASE(args->gatherv.sdtype);
@@ -107,6 +127,16 @@ static void ucg_coll_ucg_rcache_deref(mca_coll_ucg_req_t *coll_req)
         case MCA_COLL_UCG_TYPE_IALLGATHERV:
             OMPI_DATATYPE_RELEASE(args->allgatherv.sdtype);
             OMPI_DATATYPE_RELEASE(args->allgatherv.rdtype);
+            break;
+        case MCA_COLL_UCG_TYPE_REDUCE_SCATTER:
+        case MCA_COLL_UCG_TYPE_IREDUCE_SCATTER:
+            OMPI_DATATYPE_RELEASE(args->reduce_scatter.dtype);
+            OMPI_DATATYPE_RELEASE(args->reduce_scatter.dtype);
+            break;
+        case MCA_COLL_UCG_TYPE_REDUCE_SCATTER_BLOCK:
+        case MCA_COLL_UCG_TYPE_IREDUCE_SCATTER_BLOCK:
+            OMPI_DATATYPE_RELEASE(args->reduce_scatter_block.dtype);
+            OMPI_DATATYPE_RELEASE(args->reduce_scatter_block.dtype);
             break;
         default:
             UCG_FATAL("Unsupported collective type(%d).", args->coll_type);
@@ -506,6 +536,23 @@ static bool mca_coll_ucg_rcache_is_same(const mca_coll_ucg_args_t *key1,
                       mca_coll_ucg_rcache_compare(comm_size, args1->disps, args2->disps, key2->sdispls);
             break;
         }
+        case MCA_COLL_UCG_TYPE_GATHER:
+        case MCA_COLL_UCG_TYPE_IGATHER: {
+            const mca_coll_gather_args_t *args1 = &key1->gather;
+            const mca_coll_gather_args_t *args2 = &key2->gather;
+            is_same = args1->sbuf == args2->sbuf &&
+                      args1->scount == args2->scount &&
+                      args1->sdtype == args2->sdtype &&
+                      args1->root == args2->root;
+            if (ompi_comm_rank(key1->comm) != args1->root) { // Non-root processes don't compare recv parms
+                break;
+            }
+            is_same = is_same &&
+                      args1->rbuf == args2->rbuf &&
+                      args1->rdtype == args2->rdtype &&
+                      args1->rcount == args2->rcount;
+            break;
+        }
         case MCA_COLL_UCG_TYPE_GATHERV:
         case MCA_COLL_UCG_TYPE_IGATHERV: {
             const mca_coll_gatherv_args_t *args1 = &key1->gatherv;
@@ -536,6 +583,29 @@ static bool mca_coll_ucg_rcache_is_same(const mca_coll_ucg_args_t *key1,
             is_same = is_same &&
                       mca_coll_ucg_rcache_compare(comm_size, args1->rcounts, args2->rcounts, key2->rcounts) &&
                       mca_coll_ucg_rcache_compare(comm_size, args1->disps, args2->disps, key2->rdispls);
+            break;
+        }
+        case MCA_COLL_UCG_TYPE_REDUCE_SCATTER: 
+        case MCA_COLL_UCG_TYPE_IREDUCE_SCATTER: {
+            const mca_coll_reduce_scatter_args_t *args1 = &key1->reduce_scatter;
+            const mca_coll_reduce_scatter_args_t *args2 = &key2->reduce_scatter;
+            is_same = args1->sbuf == args2->sbuf &&
+                      args1->dtype == args2->dtype &&
+                      args1->rbuf == args2->rbuf &&
+                      args1->op == args2->op;
+            is_same = is_same &&
+                      mca_coll_ucg_rcache_compare(comm_size, args1->rcounts, args2->rcounts, key2->rcounts);
+            break;
+        }
+        case MCA_COLL_UCG_TYPE_REDUCE_SCATTER_BLOCK: 
+        case MCA_COLL_UCG_TYPE_IREDUCE_SCATTER_BLOCK: {
+            const mca_coll_reduce_scatter_block_args_t *args1 = &key1->reduce_scatter_block;
+            const mca_coll_reduce_scatter_block_args_t *args2 = &key2->reduce_scatter_block;
+            is_same = args1->sbuf == args2->sbuf &&
+                      args1->dtype == args2->dtype &&
+                      args1->rbuf == args2->rbuf &&
+                      args1->op == args2->op &&
+                      args1->rcount == args2->rcount;
             break;
         }
         default:

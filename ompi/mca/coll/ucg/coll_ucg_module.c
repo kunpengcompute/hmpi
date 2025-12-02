@@ -369,24 +369,33 @@ static int mca_coll_ucg_save_fallback(mca_coll_ucg_module_t *ucg_module,
     MCA_COLL_UCG_SAVE_FALLBACK(barrier);
     MCA_COLL_UCG_SAVE_FALLBACK(alltoallv);
     MCA_COLL_UCG_SAVE_FALLBACK(scatterv);
+    MCA_COLL_UCG_SAVE_FALLBACK(gather);
     MCA_COLL_UCG_SAVE_FALLBACK(gatherv);
     MCA_COLL_UCG_SAVE_FALLBACK(allgatherv);
+    MCA_COLL_UCG_SAVE_FALLBACK(reduce_scatter);
+    MCA_COLL_UCG_SAVE_FALLBACK(reduce_scatter_block);
 
     MCA_COLL_UCG_SAVE_FALLBACK(iallreduce);
     MCA_COLL_UCG_SAVE_FALLBACK(ibcast);
     MCA_COLL_UCG_SAVE_FALLBACK(ibarrier);
     MCA_COLL_UCG_SAVE_FALLBACK(ialltoallv);
     MCA_COLL_UCG_SAVE_FALLBACK(iscatterv);
+    MCA_COLL_UCG_SAVE_FALLBACK(igather);
     MCA_COLL_UCG_SAVE_FALLBACK(igatherv);
     MCA_COLL_UCG_SAVE_FALLBACK(iallgatherv);
+    MCA_COLL_UCG_SAVE_FALLBACK(ireduce_scatter);
+    MCA_COLL_UCG_SAVE_FALLBACK(ireduce_scatter_block);
 
     MCA_COLL_UCG_SAVE_FALLBACK(allreduce_init);
     MCA_COLL_UCG_SAVE_FALLBACK(bcast_init);
     MCA_COLL_UCG_SAVE_FALLBACK(barrier_init);
     MCA_COLL_UCG_SAVE_FALLBACK(alltoallv_init);
     MCA_COLL_UCG_SAVE_FALLBACK(scatterv_init);
+    MCA_COLL_UCG_SAVE_FALLBACK(gather_init);  
     MCA_COLL_UCG_SAVE_FALLBACK(gatherv_init);
     MCA_COLL_UCG_SAVE_FALLBACK(allgatherv_init);
+    MCA_COLL_UCG_SAVE_FALLBACK(reduce_scatter_init);
+    MCA_COLL_UCG_SAVE_FALLBACK(reduce_scatter_block_init);
 
     return OMPI_SUCCESS;
 }
@@ -398,24 +407,33 @@ static void mca_coll_ucg_free_fallback(mca_coll_ucg_module_t *ucg_module)
     MCA_COLL_UCG_FREE_FALLBACK(barrier);
     MCA_COLL_UCG_FREE_FALLBACK(alltoallv);
     MCA_COLL_UCG_FREE_FALLBACK(scatterv);
+    MCA_COLL_UCG_FREE_FALLBACK(gather);
     MCA_COLL_UCG_FREE_FALLBACK(gatherv);
     MCA_COLL_UCG_FREE_FALLBACK(allgatherv);
+    MCA_COLL_UCG_FREE_FALLBACK(reduce_scatter);
+    MCA_COLL_UCG_FREE_FALLBACK(reduce_scatter_block);
 
     MCA_COLL_UCG_FREE_FALLBACK(iallreduce);
     MCA_COLL_UCG_FREE_FALLBACK(ibcast);
     MCA_COLL_UCG_FREE_FALLBACK(ibarrier);
     MCA_COLL_UCG_FREE_FALLBACK(ialltoallv);
     MCA_COLL_UCG_FREE_FALLBACK(iscatterv);
+    MCA_COLL_UCG_FREE_FALLBACK(igather);
     MCA_COLL_UCG_FREE_FALLBACK(igatherv);
     MCA_COLL_UCG_FREE_FALLBACK(iallgatherv);
+    MCA_COLL_UCG_FREE_FALLBACK(ireduce_scatter);
+    MCA_COLL_UCG_FREE_FALLBACK(ireduce_scatter_block);
 
     MCA_COLL_UCG_FREE_FALLBACK(allreduce_init);
     MCA_COLL_UCG_FREE_FALLBACK(bcast_init);
     MCA_COLL_UCG_FREE_FALLBACK(barrier_init);
     MCA_COLL_UCG_FREE_FALLBACK(alltoallv_init);
     MCA_COLL_UCG_FREE_FALLBACK(scatterv_init);
+    MCA_COLL_UCG_FREE_FALLBACK(gather_init);
     MCA_COLL_UCG_FREE_FALLBACK(gatherv_init);
     MCA_COLL_UCG_FREE_FALLBACK(allgatherv_init);
+    MCA_COLL_UCG_FREE_FALLBACK(reduce_scatter_init);
+    MCA_COLL_UCG_FREE_FALLBACK(reduce_scatter_block_init);
 
     return;
 }
@@ -502,32 +520,44 @@ static void mca_coll_ucg_module_construct(mca_coll_ucg_module_t *module)
         MCA_COLL_UCG_SET_CACHE_HANDLER(bcast);
         MCA_COLL_UCG_SET_CACHE_HANDLER(alltoallv);
         MCA_COLL_UCG_SET_CACHE_HANDLER(scatterv);
+        MCA_COLL_UCG_SET_CACHE_HANDLER(gather);
         MCA_COLL_UCG_SET_CACHE_HANDLER(gatherv);
         MCA_COLL_UCG_SET_CACHE_HANDLER(allgatherv);
+        MCA_COLL_UCG_SET_CACHE_HANDLER(reduce_scatter);
+        MCA_COLL_UCG_SET_CACHE_HANDLER(reduce_scatter_block);
 
         MCA_COLL_UCG_SET_CACHE_HANDLER(iallreduce);
         MCA_COLL_UCG_SET_CACHE_HANDLER(ibarrier);
         MCA_COLL_UCG_SET_CACHE_HANDLER(ibcast);
         MCA_COLL_UCG_SET_CACHE_HANDLER(ialltoallv);
         MCA_COLL_UCG_SET_CACHE_HANDLER(iscatterv);
+        MCA_COLL_UCG_SET_CACHE_HANDLER(igather);
         MCA_COLL_UCG_SET_CACHE_HANDLER(igatherv);
         MCA_COLL_UCG_SET_CACHE_HANDLER(iallgatherv);
+        MCA_COLL_UCG_SET_CACHE_HANDLER(ireduce_scatter);
+        MCA_COLL_UCG_SET_CACHE_HANDLER(ireduce_scatter_block);
     } else {
         MCA_COLL_UCG_SET_HANDLER(allreduce);
         MCA_COLL_UCG_SET_HANDLER(barrier);
         MCA_COLL_UCG_SET_HANDLER(bcast);
         MCA_COLL_UCG_SET_HANDLER(alltoallv);
         MCA_COLL_UCG_SET_HANDLER(scatterv);
+        MCA_COLL_UCG_SET_HANDLER(gather);
         MCA_COLL_UCG_SET_HANDLER(gatherv);
         MCA_COLL_UCG_SET_HANDLER(allgatherv);
+        MCA_COLL_UCG_SET_HANDLER(reduce_scatter);
+        MCA_COLL_UCG_SET_HANDLER(reduce_scatter_block);
 
         MCA_COLL_UCG_SET_HANDLER(iallreduce);
         MCA_COLL_UCG_SET_HANDLER(ibarrier);
         MCA_COLL_UCG_SET_HANDLER(ibcast);
         MCA_COLL_UCG_SET_HANDLER(ialltoallv);
         MCA_COLL_UCG_SET_HANDLER(iscatterv);
+        MCA_COLL_UCG_SET_HANDLER(igather);
         MCA_COLL_UCG_SET_HANDLER(igatherv);
         MCA_COLL_UCG_SET_HANDLER(iallgatherv);
+        MCA_COLL_UCG_SET_HANDLER(ireduce_scatter);
+        MCA_COLL_UCG_SET_HANDLER(ireduce_scatter_block);
     }
 
     MCA_COLL_UCG_SET_HANDLER(allreduce_init);
@@ -535,8 +565,11 @@ static void mca_coll_ucg_module_construct(mca_coll_ucg_module_t *module)
     MCA_COLL_UCG_SET_HANDLER(bcast_init);
     MCA_COLL_UCG_SET_HANDLER(alltoallv_init);
     MCA_COLL_UCG_SET_HANDLER(scatterv_init);
+    MCA_COLL_UCG_SET_HANDLER(gather_init);
     MCA_COLL_UCG_SET_HANDLER(gatherv_init);
     MCA_COLL_UCG_SET_HANDLER(allgatherv_init);
+    MCA_COLL_UCG_SET_HANDLER(reduce_scatter_init);
+    MCA_COLL_UCG_SET_HANDLER(reduce_scatter_block_init);
     return;
 }
 
