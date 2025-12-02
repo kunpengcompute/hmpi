@@ -51,6 +51,11 @@ static void ucg_coll_ucg_rcache_ref(mca_coll_ucg_req_t *coll_req)
         case MCA_COLL_UCG_TYPE_BARRIER:
         case MCA_COLL_UCG_TYPE_IBARRIER:
             break;
+        case MCA_COLL_UCG_TYPE_SCATTER:
+        case MCA_COLL_UCG_TYPE_ISCATTER:
+            OMPI_DATATYPE_RETAIN(args->scatter.sdtype);
+            OMPI_DATATYPE_RETAIN(args->scatter.rdtype);
+            break;
         case MCA_COLL_UCG_TYPE_SCATTERV:
         case MCA_COLL_UCG_TYPE_ISCATTERV:
             OMPI_DATATYPE_RETAIN(args->scatterv.sdtype);
@@ -107,6 +112,11 @@ static void ucg_coll_ucg_rcache_deref(mca_coll_ucg_req_t *coll_req)
             OMPI_DATATYPE_RELEASE(args->alltoallv.rdtype);
         case MCA_COLL_UCG_TYPE_BARRIER:
         case MCA_COLL_UCG_TYPE_IBARRIER:
+            break;
+        case MCA_COLL_UCG_TYPE_SCATTER:
+        case MCA_COLL_UCG_TYPE_ISCATTER:
+            OMPI_DATATYPE_RELEASE(args->scatter.sdtype);
+            OMPI_DATATYPE_RELEASE(args->scatter.rdtype);
             break;
         case MCA_COLL_UCG_TYPE_SCATTERV:
         case MCA_COLL_UCG_TYPE_ISCATTERV:
@@ -516,6 +526,22 @@ static bool mca_coll_ucg_rcache_is_same(const mca_coll_ucg_args_t *key1,
                       mca_coll_ucg_rcache_compare(comm_size, args1->sdispls, args2->sdispls, key2->sdispls) &&
                       mca_coll_ucg_rcache_compare(comm_size, args1->rcounts, args2->rcounts, key2->rcounts) &&
                       mca_coll_ucg_rcache_compare(comm_size, args1->rdispls, args2->rdispls, key2->rdispls);
+            break;
+        }
+        case MCA_COLL_UCG_TYPE_SCATTER:
+        case MCA_COLL_UCG_TYPE_ISCATTER: {
+            const mca_coll_scatter_args_t *args1 = &key1->scatter;
+            const mca_coll_scatter_args_t *args2 = &key2->scatter;
+            is_same = args1->rbuf == args2->rbuf &&
+                      args1->rcount == args2->rcount &&
+                      args1->rdtype == args2->rdtype &&
+                      args1->root == args2->root;
+            if (ompi_comm_rank(key1->comm) != args1->root) { // Non-root processes don't compare send parms
+                break;
+            }
+            is_same = is_same &&
+                      args1->sbuf == args2->sbuf &&
+                      args1->sdtype == args2->sdtype;
             break;
         }
         case MCA_COLL_UCG_TYPE_SCATTERV:

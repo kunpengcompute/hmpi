@@ -52,12 +52,31 @@ static int nbc_alltoallv_init(const void* sendbuf, const int *sendcounts, const 
   char *rbuf, *sbuf, inplace;
   ptrdiff_t gap = 0, span;
   void * tmpbuf = NULL;
+  enum { NBC_ALLTOALLV_LINEAR,  NBC_ALLTOALLV_PAIRWISE , NBC_ALLTOALLV_INPLACE} alg;
   ompi_coll_libnbc_module_t *libnbc_module = (ompi_coll_libnbc_module_t*) module;
 
   NBC_IN_PLACE(sendbuf, recvbuf, inplace);
 
   rank = ompi_comm_rank (comm);
   p = ompi_comm_size (comm);
+  
+  if (libnbc_ialltoallv_algorithm == 0) {
+    if (inplace) {
+      alg = NBC_ALLTOALLV_INPLACE;
+    } else {
+      alg = NBC_ALLTOALLV_LINEAR;
+    }
+  } else {
+    if (libnbc_ialltoallv_algorithm == 1) {
+      alg = NBC_ALLTOALLV_LINEAR;
+    } else if (libnbc_ialltoallv_algorithm == 2) {
+      alg = NBC_ALLTOALLV_PAIRWISE;
+    } else if (libnbc_ialltoallv_algorithm == 3 && inplace) {
+      alg = NBC_ALLTOALLV_INPLACE;
+    } else {
+      alg = NBC_ALLTOALLV_LINEAR;
+    }
+  }
 
   res = ompi_datatype_type_extent (recvtype, &rcvext);
   if (MPI_SUCCESS != res) {
@@ -66,7 +85,7 @@ static int nbc_alltoallv_init(const void* sendbuf, const int *sendcounts, const 
   }
 
   /* copy data to receivbuffer */
-  if (inplace) {
+  if (NBC_ALLTOALLV_INPLACE == alg) {
     int count = 0;
     for (int i = 0; i < p; i++) {
       if (recvcounts[i] > count) {
@@ -97,8 +116,7 @@ static int nbc_alltoallv_init(const void* sendbuf, const int *sendcounts, const 
     return OMPI_ERR_OUT_OF_RESOURCE;
   }
 
-
-  if (!inplace && sendcounts[rank] != 0) {
+  if (NBC_ALLTOALLV_INPLACE != alg && sendcounts[rank] != 0) {
     rbuf = (char *) recvbuf + rdispls[rank] * rcvext;
     sbuf = (char *) sendbuf + sdispls[rank] * sndext;
     res = NBC_Sched_copy (sbuf, false, sendcounts[rank], sendtype,
@@ -109,14 +127,25 @@ static int nbc_alltoallv_init(const void* sendbuf, const int *sendcounts, const 
     }
   }
 
-  if (inplace) {
-    res = a2av_sched_inplace(rank, p, schedule, recvbuf, recvcounts,
-                                 rdispls, rcvext, recvtype, gap);
-  } else {
-    res = a2av_sched_linear(rank, p, schedule,
-                            sendbuf, sendcounts, sdispls, sndext, sendtype,
-                            recvbuf, recvcounts, rdispls, rcvext, recvtype);
+  switch (alg) {
+    case NBC_ALLTOALLV_LINEAR:
+      res = a2av_sched_linear(rank, p, schedule,
+                              sendbuf, sendcounts, sdispls, sndext, sendtype,
+                              recvbuf, recvcounts, rdispls, rcvext, recvtype);
+      break;
+    case NBC_ALLTOALLV_INPLACE:
+      res = a2av_sched_inplace(rank, p, schedule, recvbuf, recvcounts,
+                              rdispls, rcvext, recvtype, gap);
+      break;
+    case NBC_ALLTOALLV_PAIRWISE:
+      res = a2av_sched_pairwise(rank, p, schedule,
+                                sendbuf, sendcounts, sdispls, sndext, sendtype,
+                                recvbuf, recvcounts, rdispls, rcvext, recvtype);
+      break;
+    default:
+      break;
   }
+
   if (OPAL_UNLIKELY(OMPI_SUCCESS != res)) {
     OBJ_RELEASE(schedule);
     free(tmpbuf);

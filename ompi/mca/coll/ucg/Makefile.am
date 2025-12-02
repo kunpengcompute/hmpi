@@ -24,6 +24,7 @@ coll_ucg_sources = \
         coll_ucg_barrier.c \
         coll_ucg_bcast.c \
         coll_ucg_alltoallv.c \
+        coll_ucg_scatter.c \
         coll_ucg_scatterv.c \
         coll_ucg_gather.c \
         coll_ucg_gatherv.c \

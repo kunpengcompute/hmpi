@@ -72,6 +72,9 @@ typedef struct {
     mca_coll_base_module_alltoallv_fn_t previous_alltoallv;
     mca_coll_base_module_t *previous_alltoallv_module;
 
+    mca_coll_base_module_scatter_fn_t previous_scatter;
+    mca_coll_base_module_t *previous_scatter_module;
+
     mca_coll_base_module_scatterv_fn_t previous_scatterv;
     mca_coll_base_module_t *previous_scatterv_module;
 
@@ -103,6 +106,9 @@ typedef struct {
     mca_coll_base_module_ialltoallv_fn_t previous_ialltoallv;
     mca_coll_base_module_t *previous_ialltoallv_module;
 
+    mca_coll_base_module_iscatter_fn_t previous_iscatter;
+    mca_coll_base_module_t *previous_iscatter_module;
+
     mca_coll_base_module_iscatterv_fn_t previous_iscatterv;
     mca_coll_base_module_t *previous_iscatterv_module;
 
@@ -133,6 +139,9 @@ typedef struct {
 
     mca_coll_base_module_alltoallv_init_fn_t previous_alltoallv_init;
     mca_coll_base_module_t *previous_alltoallv_init_module;
+
+    mca_coll_base_module_scatter_init_fn_t previous_scatter_init;
+    mca_coll_base_module_t *previous_scatter_init_module;
 
     mca_coll_base_module_scatterv_init_fn_t previous_scatterv_init;
     mca_coll_base_module_t *previous_scatterv_init_module;
@@ -245,6 +254,31 @@ int mca_coll_ucg_ibarrier_cache(ompi_communicator_t *comm, ompi_request_t **requ
                                 mca_coll_base_module_t *module);
 
 int mca_coll_ucg_barrier_init(ompi_communicator_t *comm, ompi_info_t *info,
+                              ompi_request_t **request, mca_coll_base_module_t *module);
+
+/* scatter */
+int mca_coll_ucg_scatter(const void *sbuf, const int scount, ompi_datatype_t *sdtype, 
+                         void *rbuf, int rcount, ompi_datatype_t *rdtype, int root,
+                         ompi_communicator_t *comm, mca_coll_base_module_t *module);
+
+int mca_coll_ucg_scatter_cache(const void *sbuf, const int scount, ompi_datatype_t *sdtype,
+                               void *rbuf, int rcount, ompi_datatype_t *rdtype,
+                               int root, ompi_communicator_t *comm,
+                               mca_coll_base_module_t *module);
+
+int mca_coll_ucg_iscatter(const void *sbuf, const int scount, ompi_datatype_t *sdtype,
+                          void *rbuf, int rcount, ompi_datatype_t *rdtype, int root,
+                          ompi_communicator_t *comm, ompi_request_t **request,
+                          mca_coll_base_module_t *module);
+
+int mca_coll_ucg_iscatter_cache(const void *sbuf, const int scount, ompi_datatype_t *sdtype,
+                                void *rbuf, int rcount, ompi_datatype_t *rdtype, int root,
+                                ompi_communicator_t *comm, ompi_request_t **request,
+                                mca_coll_base_module_t *module);
+
+int mca_coll_ucg_scatter_init(const void *sbuf, const int scount, ompi_datatype_t *sdtype,
+                              void *rbuf, int rcount, ompi_datatype_t *rdtype, int root,
+                              ompi_communicator_t *comm, ompi_info_t *info,
                               ompi_request_t **request, mca_coll_base_module_t *module);
 
 /* scatterv */

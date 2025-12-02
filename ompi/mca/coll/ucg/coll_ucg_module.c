@@ -368,6 +368,7 @@ static int mca_coll_ucg_save_fallback(mca_coll_ucg_module_t *ucg_module,
     MCA_COLL_UCG_SAVE_FALLBACK(bcast);
     MCA_COLL_UCG_SAVE_FALLBACK(barrier);
     MCA_COLL_UCG_SAVE_FALLBACK(alltoallv);
+    MCA_COLL_UCG_SAVE_FALLBACK(scatter);
     MCA_COLL_UCG_SAVE_FALLBACK(scatterv);
     MCA_COLL_UCG_SAVE_FALLBACK(gather);
     MCA_COLL_UCG_SAVE_FALLBACK(gatherv);
@@ -379,6 +380,7 @@ static int mca_coll_ucg_save_fallback(mca_coll_ucg_module_t *ucg_module,
     MCA_COLL_UCG_SAVE_FALLBACK(ibcast);
     MCA_COLL_UCG_SAVE_FALLBACK(ibarrier);
     MCA_COLL_UCG_SAVE_FALLBACK(ialltoallv);
+    MCA_COLL_UCG_SAVE_FALLBACK(iscatter);
     MCA_COLL_UCG_SAVE_FALLBACK(iscatterv);
     MCA_COLL_UCG_SAVE_FALLBACK(igather);
     MCA_COLL_UCG_SAVE_FALLBACK(igatherv);
@@ -390,6 +392,7 @@ static int mca_coll_ucg_save_fallback(mca_coll_ucg_module_t *ucg_module,
     MCA_COLL_UCG_SAVE_FALLBACK(bcast_init);
     MCA_COLL_UCG_SAVE_FALLBACK(barrier_init);
     MCA_COLL_UCG_SAVE_FALLBACK(alltoallv_init);
+    MCA_COLL_UCG_SAVE_FALLBACK(scatter_init);
     MCA_COLL_UCG_SAVE_FALLBACK(scatterv_init);
     MCA_COLL_UCG_SAVE_FALLBACK(gather_init);  
     MCA_COLL_UCG_SAVE_FALLBACK(gatherv_init);
@@ -406,6 +409,7 @@ static void mca_coll_ucg_free_fallback(mca_coll_ucg_module_t *ucg_module)
     MCA_COLL_UCG_FREE_FALLBACK(bcast);
     MCA_COLL_UCG_FREE_FALLBACK(barrier);
     MCA_COLL_UCG_FREE_FALLBACK(alltoallv);
+    MCA_COLL_UCG_FREE_FALLBACK(scatter);
     MCA_COLL_UCG_FREE_FALLBACK(scatterv);
     MCA_COLL_UCG_FREE_FALLBACK(gather);
     MCA_COLL_UCG_FREE_FALLBACK(gatherv);
@@ -417,6 +421,7 @@ static void mca_coll_ucg_free_fallback(mca_coll_ucg_module_t *ucg_module)
     MCA_COLL_UCG_FREE_FALLBACK(ibcast);
     MCA_COLL_UCG_FREE_FALLBACK(ibarrier);
     MCA_COLL_UCG_FREE_FALLBACK(ialltoallv);
+    MCA_COLL_UCG_FREE_FALLBACK(iscatter);
     MCA_COLL_UCG_FREE_FALLBACK(iscatterv);
     MCA_COLL_UCG_FREE_FALLBACK(igather);
     MCA_COLL_UCG_FREE_FALLBACK(igatherv);
@@ -428,6 +433,7 @@ static void mca_coll_ucg_free_fallback(mca_coll_ucg_module_t *ucg_module)
     MCA_COLL_UCG_FREE_FALLBACK(bcast_init);
     MCA_COLL_UCG_FREE_FALLBACK(barrier_init);
     MCA_COLL_UCG_FREE_FALLBACK(alltoallv_init);
+    MCA_COLL_UCG_FREE_FALLBACK(scatter_init);
     MCA_COLL_UCG_FREE_FALLBACK(scatterv_init);
     MCA_COLL_UCG_FREE_FALLBACK(gather_init);
     MCA_COLL_UCG_FREE_FALLBACK(gatherv_init);
@@ -519,6 +525,7 @@ static void mca_coll_ucg_module_construct(mca_coll_ucg_module_t *module)
         MCA_COLL_UCG_SET_CACHE_HANDLER(barrier);
         MCA_COLL_UCG_SET_CACHE_HANDLER(bcast);
         MCA_COLL_UCG_SET_CACHE_HANDLER(alltoallv);
+        MCA_COLL_UCG_SET_CACHE_HANDLER(scatter);
         MCA_COLL_UCG_SET_CACHE_HANDLER(scatterv);
         MCA_COLL_UCG_SET_CACHE_HANDLER(gather);
         MCA_COLL_UCG_SET_CACHE_HANDLER(gatherv);
@@ -530,6 +537,7 @@ static void mca_coll_ucg_module_construct(mca_coll_ucg_module_t *module)
         MCA_COLL_UCG_SET_CACHE_HANDLER(ibarrier);
         MCA_COLL_UCG_SET_CACHE_HANDLER(ibcast);
         MCA_COLL_UCG_SET_CACHE_HANDLER(ialltoallv);
+        MCA_COLL_UCG_SET_CACHE_HANDLER(iscatter);
         MCA_COLL_UCG_SET_CACHE_HANDLER(iscatterv);
         MCA_COLL_UCG_SET_CACHE_HANDLER(igather);
         MCA_COLL_UCG_SET_CACHE_HANDLER(igatherv);
@@ -541,6 +549,7 @@ static void mca_coll_ucg_module_construct(mca_coll_ucg_module_t *module)
         MCA_COLL_UCG_SET_HANDLER(barrier);
         MCA_COLL_UCG_SET_HANDLER(bcast);
         MCA_COLL_UCG_SET_HANDLER(alltoallv);
+        MCA_COLL_UCG_SET_HANDLER(scatter);
         MCA_COLL_UCG_SET_HANDLER(scatterv);
         MCA_COLL_UCG_SET_HANDLER(gather);
         MCA_COLL_UCG_SET_HANDLER(gatherv);
@@ -552,6 +561,7 @@ static void mca_coll_ucg_module_construct(mca_coll_ucg_module_t *module)
         MCA_COLL_UCG_SET_HANDLER(ibarrier);
         MCA_COLL_UCG_SET_HANDLER(ibcast);
         MCA_COLL_UCG_SET_HANDLER(ialltoallv);
+        MCA_COLL_UCG_SET_HANDLER(iscatter);
         MCA_COLL_UCG_SET_HANDLER(iscatterv);
         MCA_COLL_UCG_SET_HANDLER(igather);
         MCA_COLL_UCG_SET_HANDLER(igatherv);
@@ -564,6 +574,7 @@ static void mca_coll_ucg_module_construct(mca_coll_ucg_module_t *module)
     MCA_COLL_UCG_SET_HANDLER(barrier_init);
     MCA_COLL_UCG_SET_HANDLER(bcast_init);
     MCA_COLL_UCG_SET_HANDLER(alltoallv_init);
+    MCA_COLL_UCG_SET_HANDLER(scatter_init);
     MCA_COLL_UCG_SET_HANDLER(scatterv_init);
     MCA_COLL_UCG_SET_HANDLER(gather_init);
     MCA_COLL_UCG_SET_HANDLER(gatherv_init);
