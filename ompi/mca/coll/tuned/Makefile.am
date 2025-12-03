@@ -38,6 +38,7 @@ sources = \
         coll_tuned_alltoall_decision.c \
         coll_tuned_gather_decision.c \
         coll_tuned_alltoallv_decision.c \
+        coll_tuned_alltoallw_decision.c \
         coll_tuned_barrier_decision.c \
         coll_tuned_reduce_decision.c \
         coll_tuned_bcast_decision.c \

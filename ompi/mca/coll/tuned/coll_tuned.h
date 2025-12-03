@@ -128,6 +128,12 @@ int ompi_coll_tuned_alltoallv_intra_dec_dynamic(ALLTOALLV_ARGS);
 int ompi_coll_tuned_alltoallv_intra_do_this(ALLTOALLV_ARGS, int algorithm);
 int ompi_coll_tuned_alltoallv_intra_check_forced_init(coll_tuned_force_algorithm_mca_param_indices_t *mca_param_indices);
 
+/* AlltoAllW */
+int ompi_coll_tuned_alltoallw_intra_dec_fixed(ALLTOALLW_ARGS);
+int ompi_coll_tuned_alltoallw_intra_dec_dynamic(ALLTOALLW_ARGS);
+int ompi_coll_tuned_alltoallw_intra_do_this(ALLTOALLW_ARGS, int algorithm);
+int ompi_coll_tuned_alltoallw_intra_check_forced_init(coll_tuned_force_algorithm_mca_param_indices_t *mca_param_indices);
+
 /* Barrier */
 int ompi_coll_tuned_barrier_intra_dec_fixed(BARRIER_ARGS);
 int ompi_coll_tuned_barrier_intra_dec_dynamic(BARRIER_ARGS);

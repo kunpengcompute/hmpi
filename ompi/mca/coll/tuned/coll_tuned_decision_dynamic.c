@@ -198,6 +198,54 @@ int ompi_coll_tuned_alltoallv_intra_dec_dynamic(const void *sbuf, const int *sco
 }
 
 /*
+ *    Function:   - selects alltoallw algorithm to use
+ *    Accepts:    - same arguments as MPI_Alltoallw()
+ *    Returns:    - MPI_SUCCESS or error code
+ */
+int ompi_coll_tuned_alltoallw_intra_dec_dynamic(const void *sbuf, const int *scounts, const int *sdisps,
+                                                struct ompi_datatype_t * const *sdtypes,
+                                                void* rbuf, const int *rcounts, const int *rdisps,
+                                                struct ompi_datatype_t * const *rdtypes,
+                                                struct ompi_communicator_t *comm,
+                                                mca_coll_base_module_t *module)
+{
+    mca_coll_tuned_module_t *tuned_module = (mca_coll_tuned_module_t*) module;
+
+    OPAL_OUTPUT((ompi_coll_tuned_stream, "ompi_coll_tuned_alltoallw_intra_dec_dynamic"));
+
+    /**
+     * check to see if we have some filebased rules. As we don't have global
+     * knowledge about the total amount of data, use the first available rule.
+     * This allow the users to specify the alltoallw algorithm to be used only
+     * based on the communicator size.
+     */
+    if (tuned_module->com_rules[ALLTOALLW]) {
+        int alg, faninout, segsize, max_requests;
+
+        alg = ompi_coll_tuned_get_target_method_params (tuned_module->com_rules[ALLTOALLW],
+                                                        0, &faninout, &segsize, &max_requests);
+
+        if (alg) {
+            /* we have found a valid choice from the file based rules for this message size */
+            return ompi_coll_tuned_alltoallw_intra_do_this (sbuf, scounts, sdisps, sdtypes,
+                                                            rbuf, rcounts, rdisps, rdtypes,
+                                                            comm, module,
+                                                            alg);
+        } /* found a method */
+    } /*end if any com rules to check */
+
+    if (tuned_module->user_forced[ALLTOALLW].algorithm) {
+        return ompi_coll_tuned_alltoallw_intra_do_this(sbuf, scounts, sdisps, sdtypes,
+                                                       rbuf, rcounts, rdisps, rdtypes,
+                                                       comm, module,
+                                                       tuned_module->user_forced[ALLTOALLW].algorithm);
+    }
+    return ompi_coll_tuned_alltoallw_intra_dec_fixed(sbuf, scounts, sdisps, sdtypes,
+                                                     rbuf, rcounts, rdisps, rdtypes,
+                                                     comm, module);
+}
+
+/*
  *    barrier_intra_dec
  *
  *    Function:    - seletects barrier algorithm to use
