@@ -229,6 +229,12 @@ int mca_coll_base_alltoallv_intra_basic_inplace(const void *rbuf, const int *rco
                                                 mca_coll_base_module_t *module);  /* special version for INPLACE */
 
 /* AlltoAllW */
+int ompi_coll_base_alltoallw_intra_pairwise(ALLTOALLW_ARGS);
+int ompi_coll_base_alltoallw_intra_basic_linear(ALLTOALLW_ARGS);
+int mca_coll_base_alltoallw_intra_basic_inplace(const void *rbuf, const int *rcounts, const int *rdisps,
+                                                struct ompi_datatype_t * const *rdtypes,
+                                                struct ompi_communicator_t *comm,
+                                                mca_coll_base_module_t *module);  /* special version for INPLACE */
 
 /* Barrier */
 int ompi_coll_base_barrier_intra_doublering(BARRIER_ARGS);

@@ -453,6 +453,35 @@ int ompi_coll_tuned_alltoallv_intra_dec_fixed(const void *sbuf, const int *scoun
                                                     alg);
 }
 
+/*
+ *      Function:       - selects alltoallw algorithm to use
+ *      Accepts:        - same arguments as MPI_Alltoallw()
+ *      Returns:        - MPI_SUCCESS or error code
+ */
+int ompi_coll_tuned_alltoallw_intra_dec_fixed(const void *sbuf, const int *scounts, const int *sdisps,
+                                              struct ompi_datatype_t * const *sdtypes,
+                                              void *rbuf, const int *rcounts, const int *rdisps,
+                                              struct ompi_datatype_t * const *rdtypes,
+                                              struct ompi_communicator_t *comm,
+                                              mca_coll_base_module_t *module)
+{
+    int communicator_size, alg;
+    communicator_size = ompi_comm_size(comm);
+
+    OPAL_OUTPUT((ompi_coll_tuned_stream, "ompi_coll_tuned_alltoallw_intra_dec_fixed com_size %d",
+                 communicator_size));
+    /** Algorithms:
+     *  {1, "basic_linear"},
+     *  {2, "pairwise"},
+     *
+     * default use basic_linear
+     */
+    alg = 1;
+    return ompi_coll_tuned_alltoallw_intra_do_this (sbuf, scounts, sdisps, sdtypes,
+                                                    rbuf, rcounts, rdisps, rdtypes,
+                                                    comm, module,
+                                                    alg);
+}
 
 /*
  *	barrier_intra_dec

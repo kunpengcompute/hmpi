@@ -100,7 +100,7 @@ ompi_coll_tuned_comm_query(struct ompi_communicator_t *comm, int *priority)
     tuned_module->super.coll_allreduce  = ompi_coll_tuned_allreduce_intra_dec_fixed;
     tuned_module->super.coll_alltoall   = ompi_coll_tuned_alltoall_intra_dec_fixed;
     tuned_module->super.coll_alltoallv  = ompi_coll_tuned_alltoallv_intra_dec_fixed;
-    tuned_module->super.coll_alltoallw  = NULL;
+    tuned_module->super.coll_alltoallw  = ompi_coll_tuned_alltoallw_intra_dec_fixed;
     tuned_module->super.coll_barrier    = ompi_coll_tuned_barrier_intra_dec_fixed;
     tuned_module->super.coll_bcast      = ompi_coll_tuned_bcast_intra_dec_fixed;
     tuned_module->super.coll_exscan     = NULL;
@@ -226,7 +226,7 @@ tuned_module_enable( mca_coll_base_module_t *module,
         COLL_TUNED_EXECUTE_IF_DYNAMIC(tuned_module, ALLTOALLV,
                                       tuned_module->super.coll_alltoallv  = ompi_coll_tuned_alltoallv_intra_dec_dynamic);
         COLL_TUNED_EXECUTE_IF_DYNAMIC(tuned_module, ALLTOALLW,
-                                      tuned_module->super.coll_alltoallw  = NULL);
+                                      tuned_module->super.coll_alltoallw  = ompi_coll_tuned_alltoallw_intra_dec_dynamic);
         COLL_TUNED_EXECUTE_IF_DYNAMIC(tuned_module, BARRIER,
                                       tuned_module->super.coll_barrier    = ompi_coll_tuned_barrier_intra_dec_dynamic);
         COLL_TUNED_EXECUTE_IF_DYNAMIC(tuned_module, BCAST,

@@ -40,6 +40,7 @@ libmca_coll_la_SOURCES += \
         base/coll_base_alltoall.c \
         base/coll_base_gather.c \
         base/coll_base_alltoallv.c \
+        base/coll_base_alltoallw.c \
         base/coll_base_reduce.c \
         base/coll_base_barrier.c \
         base/coll_base_reduce_scatter.c \
