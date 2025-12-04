@@ -306,9 +306,28 @@ int mca_coll_ucg_init_once()
         }
     }
 
-    if (cm->disable_coll != NULL) {
-        UCG_DEBUG("Disable %s", cm->disable_coll);
-        cm->blacklist = opal_argv_split(cm->disable_coll, ',');
+    char *disable_list = "gather,igather,gatherv,igatherv,scatter,iscatter,reduce_scatter,ireduce_scatter,"
+        "reduce_scatter_block,ireduce_scatter_block";
+    unsigned long long cpu_id;
+    __asm__ volatile ("mrs %0, MIDR_EL1":"=r"(cpu_id));
+    unsigned long long vendor = (cpu_id >> 0x18) & 0xFF;
+    unsigned long long part_id = (cpu_id >> 0x4) & 0xFFF;
+    if (!((vendor == 0x48) && (part_id == 0xD22))) {
+        if (cm->disable_coll != NULL) {
+            size_t len = strlen(disable_list) + strlen(cm->disable_coll) + 1;
+            char *disable_combine = (char *)malloc(len + 1);
+            snprintf(disable_combine, len + 1, "%s,%s", cm->disable_coll, disable_list);
+            UCG_DEBUG("Disable %s", disable_combine);
+            cm->blacklist = opal_argv_split(disable_combine, ',');
+            free(disable_combine);
+        } else {
+            cm->blacklist = opal_argv_split(disable_list, ',');
+        }
+    } else {
+        if (cm->disable_coll != NULL) {
+            UCG_DEBUG("Disable %s", cm->disable_coll);
+            cm->blacklist = opal_argv_split(cm->disable_coll, ',');
+        }
     }
 
     mca_coll_ucg_npolls_init(cm->npolls);
