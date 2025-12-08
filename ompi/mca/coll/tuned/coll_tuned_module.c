@@ -157,7 +157,7 @@ ompi_coll_tuned_forced_getvalues( enum COLLTYPE type,
         if( 0 != (TMOD)->user_forced[(TYPE)].algorithm ) {              \
             need_dynamic_decision = 1;                                  \
         }                                                               \
-        if( NULL != mca_coll_tuned_component.all_base_rules ) {         \
+        if( NULL != mca_coll_tuned_component.all_base_rules && need_dynamic_decision == 0) { \
             (TMOD)->com_rules[(TYPE)]                                   \
                 = ompi_coll_tuned_get_com_rule_ptr( mca_coll_tuned_component.all_base_rules, \
                                                     (TYPE), size );     \
