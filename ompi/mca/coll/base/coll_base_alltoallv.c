@@ -292,9 +292,9 @@ ompi_coll_base_alltoallv_intra_basic_linear(const void *sbuf, const int *scounts
         if (rcounts[i] > 0) {
             ++nreqs;
             prcv = ((char *) rbuf) + (ptrdiff_t)rdisps[i] * rext;
-            err = MCA_PML_CALL(irecv_init(prcv, rcounts[i], rdtype,
-                                          i, MCA_COLL_BASE_TAG_ALLTOALLV, comm,
-                                          preq++));
+            err = MCA_PML_CALL(irecv(prcv, rcounts[i], rdtype,
+                                     i, MCA_COLL_BASE_TAG_ALLTOALLV, comm,
+                                     preq++));
             if (MPI_SUCCESS != err) { goto err_hndl; }
         }
     }
@@ -308,16 +308,13 @@ ompi_coll_base_alltoallv_intra_basic_linear(const void *sbuf, const int *scounts
         if (scounts[i] > 0) {
             ++nreqs;
             psnd = ((char *) sbuf) + (ptrdiff_t)sdisps[i] * sext;
-            err = MCA_PML_CALL(isend_init(psnd, scounts[i], sdtype,
-                                         i, MCA_COLL_BASE_TAG_ALLTOALLV,
-                                         MCA_PML_BASE_SEND_STANDARD, comm,
-                                         preq++));
+            err = MCA_PML_CALL(isend(psnd, scounts[i], sdtype,
+                                     i, MCA_COLL_BASE_TAG_ALLTOALLV,
+                                     MCA_PML_BASE_SEND_STANDARD, comm,
+                                     preq++));
             if (MPI_SUCCESS != err) { goto err_hndl; }
         }
     }
-
-    /* Start your engines.  This will never return an error. */
-    MCA_PML_CALL(start(nreqs, reqs));
 
     /* Wait for them all.  If there's an error, note that we don't care
      * what the error was -- just that there *was* an error.  The PML
