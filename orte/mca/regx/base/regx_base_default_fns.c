@@ -888,6 +888,17 @@ int orte_regx_base_parse_ppn(orte_job_t *jdata, char *regex)
     opal_list_t trk;
     int rc = ORTE_SUCCESS;
 
+    /* when performing a spawn, bookmark is first placed into the map
+     * condition is fucntion is called for the second time and map->mapping is round-robin */
+    static bool re_enter = false;
+
+    if (re_enter && ORTE_MAPPING_RR >= ORTE_GET_MAPPING_POLICY(jdata->map->mapping) &&
+        jdata->bookmark != NULL && !ORTE_FLAG_TEST(jdata->bookmark, ORTE_NODE_FLAG_MAPPED)) {
+        OBJ_RETAIN(jdata->bookmark);
+        ORTE_FLAG_SET(jdata->bookmark, ORTE_NODE_FLAG_MAPPED);
+        opal_pointer_array_add(jdata->map->nodes, jdata->bookmark);
+    }
+
     /* split the regex by app_context */
     tmp = opal_argv_split(regex, '@');
 
@@ -971,6 +982,7 @@ int orte_regx_base_parse_ppn(orte_job_t *jdata, char *regex)
         }
     }
 
+    re_enter = true;
     return rc;
 }
 
