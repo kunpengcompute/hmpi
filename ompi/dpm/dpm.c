@@ -952,6 +952,8 @@ int ompi_dpm_spawn(int count, const char *array_of_commands[],
                 opal_argv_append_unique_nosize(&app->env, params, true);
             }
 
+            opal_argv_append_unique_nosize(&app->env, "OMPI_MCA_async_mpi_finalize=true", true);
+
             /* see if user specified what to do with stdin - defaults to
              * not forwarding stdin to child processes - job-level key
              */
