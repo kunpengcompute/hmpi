@@ -28,6 +28,10 @@ static inline int allgather_sched_recursivedoubling(
     int rank, int comm_size, NBC_Schedule *schedule, const void *sbuf,
     int scount, struct ompi_datatype_t *sdtype, void *rbuf, int rcount,
     struct ompi_datatype_t *rdtype);
+static inline int allgather_sched_ring(
+    int rank, int comm_size, NBC_Schedule *schedule, const void *sendbuf,
+    int scount, struct ompi_datatype_t *sdtype, void *recvbuf, int rcount,
+    struct ompi_datatype_t *rdtype);
 
 #ifdef NBC_CACHE_SCHEDULE
 /* tree comparison function for schedule cache */
@@ -60,7 +64,7 @@ static int nbc_allgather_init(const void* sendbuf, int sendcount, MPI_Datatype s
 #ifdef NBC_CACHE_SCHEDULE
   NBC_Allgather_args *args, *found, search;
 #endif
-  enum { NBC_ALLGATHER_LINEAR, NBC_ALLGATHER_RDBL} alg;
+  enum { NBC_ALLGATHER_LINEAR, NBC_ALLGATHER_RDBL, NBC_ALLGATHER_RING} alg;
   ompi_coll_libnbc_module_t *libnbc_module = (ompi_coll_libnbc_module_t*) module;
 
   NBC_IN_PLACE(sendbuf, recvbuf, inplace);
@@ -77,6 +81,8 @@ static int nbc_allgather_init(const void* sendbuf, int sendcount, MPI_Datatype s
       alg = NBC_ALLGATHER_LINEAR;
     } else if (libnbc_iallgather_algorithm == 2 && is_commsize_pow2) {
       alg = NBC_ALLGATHER_RDBL;
+    } else if (libnbc_iallgather_algorithm == 3) {
+      alg = NBC_ALLGATHER_RING;
     } else {
       alg = NBC_ALLGATHER_LINEAR;
     }
@@ -138,6 +144,10 @@ static int nbc_allgather_init(const void* sendbuf, int sendcount, MPI_Datatype s
       case NBC_ALLGATHER_RDBL:
         res = allgather_sched_recursivedoubling(rank, p, schedule, sendbuf, sendcount,
                                                 sendtype, recvbuf, recvcount, recvtype);
+        break;
+      case NBC_ALLGATHER_RING:
+        res = allgather_sched_ring(rank, p, schedule, sendbuf, sendcount, sendtype,
+                                   recvbuf, recvcount, recvtype);
         break;
     }
 
@@ -383,6 +393,35 @@ static inline int allgather_sched_recursivedoubling(
         res = NBC_Sched_recv(tmprecv, false, (ptrdiff_t)distance * (ptrdiff_t)rcount,
                              rdtype, remote, schedule, true);
         if (OPAL_UNLIKELY(OMPI_SUCCESS != res)) { goto cleanup_and_return; }
+    }
+
+cleanup_and_return:
+    return res;
+}
+
+static inline int allgather_sched_ring(
+    int rank, int comm_size, NBC_Schedule *schedule, const void *sendbuf,
+    int scount, struct ompi_datatype_t *sdtype, void *recvbuf, int rcount,
+    struct ompi_datatype_t *rdtype)
+{
+    int res = OMPI_SUCCESS;
+    ptrdiff_t rlb, rext;
+
+    res = ompi_datatype_get_extent(rdtype, &rlb, &rext);
+    if (OPAL_UNLIKELY(OMPI_SUCCESS != res)) { goto cleanup_and_return; }
+
+    int send_to_peer = (rank + 1) % comm_size;
+    int recv_from_peer = (rank + comm_size - 1) % comm_size;
+    for (int step = comm_size - 1; step > 0 ; --step) {
+      /* Send to rank remote - not from the sendbuf to optimize MPI_IN_PLACE */
+      char *sbuf = (char *)recvbuf + (MPI_Aint) rext * ((step + rank + 1 + comm_size) % comm_size) * rcount;
+      res = NBC_Sched_send(sbuf, false, rcount, rdtype, send_to_peer, schedule, false);
+      if (OPAL_UNLIKELY(OMPI_SUCCESS != res)) { goto cleanup_and_return; }
+
+      /* Recv from rank remote */
+      char *rbuf = (char *)recvbuf + (MPI_Aint) rext * ((step + rank) % comm_size) * rcount;
+      res = NBC_Sched_recv(rbuf, false, rcount, rdtype, recv_from_peer, schedule, true);
+      if (OPAL_UNLIKELY(OMPI_SUCCESS != res)) { goto cleanup_and_return; }
     }
 
 cleanup_and_return:

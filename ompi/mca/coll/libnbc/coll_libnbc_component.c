@@ -51,6 +51,7 @@ static mca_base_var_enum_value_t iallgather_algorithms[] = {
     {0, "ignore"},
     {1, "linear"},
     {2, "recursive_doubling"},
+    {3, "ring"},
     {0, NULL}
 };
 
