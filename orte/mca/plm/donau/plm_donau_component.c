@@ -96,6 +96,7 @@ static int plm_donau_register(void)
                                             OPAL_INFO_LVL_9,
                                             MCA_BASE_VAR_SCOPE_READONLY,
                                             &mca_plm_donau_component.donau_warning_msg);
+    orte_plm_globals.node_regex_threshold = INT_MAX;
     return ORTE_SUCCESS;
 }
 
