@@ -129,6 +129,27 @@ static mca_base_var_enum_value_t ialltoallw_algorithms[] = {
     {0, NULL}
 };
 
+int libnbc_ineighbor_alltoall_correct_cyclic_cart = 0;             /* ialltoallv user forced algorithm */
+static mca_base_var_enum_value_t libnbc_ineighbor_alltoall_correct_cyclic_carts[] = {
+    {0, "origin (openmpi)"},
+    {1, "correct"},
+    {0, NULL}
+};
+
+int libnbc_ineighbor_alltoallv_correct_cyclic_cart = 0;             /* ialltoallv user forced algorithm */
+static mca_base_var_enum_value_t libnbc_ineighbor_alltoallv_correct_cyclic_carts[] = {
+    {0, "origin (openmpi)"},
+    {1, "correct"},
+    {0, NULL}
+};
+
+int libnbc_ineighbor_alltoallw_correct_cyclic_cart = 0;             /* ialltoallv user forced algorithm */
+static mca_base_var_enum_value_t libnbc_ineighbor_alltoallw_correct_cyclic_carts[] = {
+    {0, "origin (openmpi)"},
+    {1, "correct"},
+    {0, NULL}
+};
+
 static int libnbc_open(void);
 static int libnbc_close(void);
 static int libnbc_register(void);
@@ -339,6 +360,36 @@ libnbc_register(void)
                                     &libnbc_ialltoallw_algorithm);
     OBJ_RELEASE(new_enum);
 
+    libnbc_ineighbor_alltoall_correct_cyclic_cart = 0;
+    (void) mca_base_var_enum_create("coll_libnbc_ineighbor_alltoall_correct_cyclic_carts", libnbc_ineighbor_alltoall_correct_cyclic_carts, &new_enum);
+    mca_base_component_var_register(&mca_coll_libnbc_component.super.collm_version,
+                                    "ineighbor_alltoall_correct_cyclic_cart",
+                                    "Wheather ineighbor_alltoall cyclic cart correct: 0 openmpi, 1 correct",
+                                    MCA_BASE_VAR_TYPE_INT, new_enum, 0, MCA_BASE_VAR_FLAG_SETTABLE,
+                                    OPAL_INFO_LVL_5, MCA_BASE_VAR_SCOPE_ALL,
+                                    &libnbc_ineighbor_alltoall_correct_cyclic_cart);
+    OBJ_RELEASE(new_enum);
+
+    libnbc_ineighbor_alltoallv_correct_cyclic_cart = 0;
+    (void) mca_base_var_enum_create("coll_libnbc_ineighbor_alltoallv_correct_cyclic_carts", libnbc_ineighbor_alltoallv_correct_cyclic_carts, &new_enum);
+    mca_base_component_var_register(&mca_coll_libnbc_component.super.collm_version,
+                                    "ineighbor_alltoallv_correct_cyclic_cart",
+                                    "Wheather ineighbor_alltoallv cyclic cart correct: 0 openmpi, 1 correct",
+                                    MCA_BASE_VAR_TYPE_INT, new_enum, 0, MCA_BASE_VAR_FLAG_SETTABLE,
+                                    OPAL_INFO_LVL_5, MCA_BASE_VAR_SCOPE_ALL,
+                                    &libnbc_ineighbor_alltoallv_correct_cyclic_cart);
+    OBJ_RELEASE(new_enum);
+    
+    libnbc_ineighbor_alltoallw_correct_cyclic_cart = 0;
+    (void) mca_base_var_enum_create("coll_libnbc_ineighbor_alltoallw_correct_cyclic_carts", libnbc_ineighbor_alltoallw_correct_cyclic_carts, &new_enum);
+    mca_base_component_var_register(&mca_coll_libnbc_component.super.collm_version,
+                                    "ineighbor_alltoallw_correct_cyclic_cart",
+                                    "Wheather ineighbor_alltoallw cyclic cart correct: 0 openmpi, 1 correct",
+                                    MCA_BASE_VAR_TYPE_INT, new_enum, 0, MCA_BASE_VAR_FLAG_SETTABLE,
+                                    OPAL_INFO_LVL_5, MCA_BASE_VAR_SCOPE_ALL,
+                                    &libnbc_ineighbor_alltoallw_correct_cyclic_cart);
+    OBJ_RELEASE(new_enum);
+    
     return OMPI_SUCCESS;
 }
 
