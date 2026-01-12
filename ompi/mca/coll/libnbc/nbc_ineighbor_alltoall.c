@@ -88,7 +88,7 @@ static int nbc_neighbor_alltoall_init(const void *sbuf, int scount, MPI_Datatype
       return res;
     }
 
-    if (libnbc_ineighbor_alltoall_correct_cyclic_cart == 1) {
+    if (libnbc_ineighbor_alltoall_correct_cyclic_cart) {
       /* change recv order to solve the problem of opposite results in loop neigbor under 2 processes */
       /* issue can see https://github.com/mpi-forum/mpi-issues/issues/153 */
       /* comm is cart and process of a certain dim is 1 need to special handle */
