@@ -77,7 +77,7 @@ static int nbc_neighbor_alltoallw_init(const void *sbuf, const int *scounts, con
       return res;
     }
 
-    if (libnbc_ineighbor_alltoallw_correct_cyclic_cart == 1) {
+    if (libnbc_ineighbor_alltoallw_correct_cyclic_cart) {
       /* simply loop over neighbors and post send/recv operations */
       /* change recv order to solve the problem of opposite results in loop neigbor under 2 processes */
       /* issue can see https://github.com/mpi-forum/mpi-issues/issues/153 */
