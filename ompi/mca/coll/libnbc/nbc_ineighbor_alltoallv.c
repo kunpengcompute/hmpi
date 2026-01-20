@@ -91,35 +91,46 @@ static int nbc_neighbor_alltoallv_init(const void *sbuf, const int *scounts, con
       return res;
     }
 
-    /* simply loop over neighbors and post send/recv operations */
-    /* change recv order to solve the problem of opposite results in loop neigbor under 2 processes */
-    /* issue can see https://github.com/mpi-forum/mpi-issues/issues/153 */
-    /* comm is cart and process of a certain dim is 1 need to special handle */
-    bool is_cart_dim_one = false;
-    if (OMPI_COMM_IS_CART(comm)) {
-      for(int dim = 0 ; dim <comm->c_topo->mtc.cart->ndims ; ++dim) {
-        if (comm->c_topo->mtc.cart->dims[dim] == 1) {
-          is_cart_dim_one = true;
-          break;
+    if (libnbc_ineighbor_alltoallv_correct_cyclic_cart) {
+      /* simply loop over neighbors and post send/recv operations */
+      /* change recv order to solve the problem of opposite results in loop neigbor under 2 processes */
+      /* issue can see https://github.com/mpi-forum/mpi-issues/issues/153 */
+      /* comm is cart and process of a certain dim is 1 need to special handle */
+      bool is_cart_dim_one = false;
+      if (OMPI_COMM_IS_CART(comm)) {
+        for(int dim = 0 ; dim <comm->c_topo->mtc.cart->ndims ; ++dim) {
+          if (comm->c_topo->mtc.cart->dims[dim] == 1) {
+            is_cart_dim_one = true;
+            break;
+          }
         }
       }
-    }
-    if (is_cart_dim_one) {
-      for (int dim = 0 ; dim < comm->c_topo->mtc.cart->ndims ; ++dim) {
-        for (int i = 1 ; i >= 0 ; --i) {
-          if (MPI_PROC_NULL != srcs[2 * dim + i]) {
-            res = NBC_Sched_recv ((char *) rbuf + rdispls[2 * dim + i] * rcvext, false, rcounts[2 * dim + i], rtype, srcs[2 * dim + i], schedule, false);
+      if (is_cart_dim_one) {
+        for (int dim = 0 ; dim < comm->c_topo->mtc.cart->ndims ; ++dim) {
+          for (int i = 1 ; i >= 0 ; --i) {
+            if (MPI_PROC_NULL != srcs[2 * dim + i]) {
+              res = NBC_Sched_recv ((char *) rbuf + rdispls[2 * dim + i] * rcvext, false, rcounts[2 * dim + i], rtype, srcs[2 * dim + i], schedule, false);
+              if (OPAL_UNLIKELY(OMPI_SUCCESS != res)) {
+                break;
+              }
+            }
+          }
+          if (OPAL_UNLIKELY(OMPI_SUCCESS != res)) {
+            break;
+          }
+        }
+      } else {
+        for (int i = indegree - 1 ; i >= 0 ; --i) {
+          if (srcs[i] != MPI_PROC_NULL) {
+            res = NBC_Sched_recv ((char *) rbuf + rdispls[i] * rcvext, false, rcounts[i], rtype, srcs[i], schedule, false);
             if (OPAL_UNLIKELY(OMPI_SUCCESS != res)) {
               break;
             }
           }
         }
-        if (OPAL_UNLIKELY(OMPI_SUCCESS != res)) {
-          break;
-        }
       }
     } else {
-      for (int i = indegree - 1 ; i >= 0 ; --i) {
+      for (int i = 0 ; i < indegree ; ++i) {
         if (srcs[i] != MPI_PROC_NULL) {
           res = NBC_Sched_recv ((char *) rbuf + rdispls[i] * rcvext, false, rcounts[i], rtype, srcs[i], schedule, false);
           if (OPAL_UNLIKELY(OMPI_SUCCESS != res)) {
