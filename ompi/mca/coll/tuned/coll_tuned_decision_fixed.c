@@ -208,7 +208,7 @@ ompi_coll_tuned_allreduce_intra_dec_fixed(const void *sbuf, void *rbuf, int coun
             } else if (total_dsize < 32768) {
                 alg = 3;
             } else {
-                alg = 6;
+                alg = 4;
             }
         }
     }
@@ -671,7 +671,7 @@ int ompi_coll_tuned_bcast_intra_dec_fixed(void *buff, int count,
         } else if (total_dsize < 262144) {
             alg = 7;
         } else {
-            alg = 8;
+            alg = 7;
         }
     }
 
