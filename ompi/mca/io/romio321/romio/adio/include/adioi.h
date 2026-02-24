@@ -81,6 +81,9 @@ struct ADIOI_Hints_struct {
 				   index in bridgelist */
 	    int numbridges; /* total number of bridges */
 	} bg;
+        struct {
+            int view_io;
+        } oceanfs;
     } fs_hints;
 
 };
@@ -868,8 +871,9 @@ int MPIOI_File_iread_all(MPI_File fh,
             char *myname,
             MPI_Request *request);
 
-
-
+#ifdef ROMIO_OCEANFS
+#define ADIOI_FILESYSTEM_VIEW(fd,error_code) ADIOI_OCEANFS_set_view(fd,error_code)
+#endif
 /* Unix-style file locking */
 
 #if (defined(ROMIO_HFS) || defined(ROMIO_XFS))
@@ -900,6 +904,16 @@ int MPIOI_File_iread_all(MPI_File fh,
           ADIOI_Set_lock((fd)->fd_sys, ADIOI_LOCK_CMD, 0, offset, whence, len)
 #   define ADIOI_UNLOCK(fd, offset, whence, len) \
           ADIOI_Set_lock((fd)->fd_sys, ADIOI_UNLOCK_CMD, LOCKFILE_FAIL_IMMEDIATELY, offset, whence, len)
+
+#elif (defined(ROMIO_OCEANFS))
+#include "../ad_oceanfs/ad_oceanfs.h"
+
+#   define ADIOI_WRITE_LOCK(fd, offset, whence, len) \
+          ADIOI_OCEANFS_Set_lock((fd)->fd_sys, F_SETLKW, F_WRLCK, offset, whence, len)
+#   define ADIOI_READ_LOCK(fd, offset, whence, len) \
+          ADIOI_OCEANFS_Set_lock((fd)->fd_sys, F_SETLKW, F_RDLCK, offset, whence, len)
+#   define ADIOI_UNLOCK(fd, offset, whence, len) \
+          ADIOI_OCEANFS_Set_lock((fd)->fd_sys, F_SETLK, F_UNLCK, offset, whence, len)
 
 #else
 

@@ -89,4 +89,9 @@ extern struct ADIOI_Fns_struct ADIO_GRIDFTP_operations;
 extern struct ADIOI_Fns_struct ADIO_ZOIDFS_operations;
 #endif
 
+#ifdef ROMIO_OCEANFS
+/* prototypes are in adio/ad_oceanfs/ad_oceanfs.h */
+extern struct ADIOI_Fns_struct ADIO_OCEANFS_operations;
+#endif
+
 #endif
