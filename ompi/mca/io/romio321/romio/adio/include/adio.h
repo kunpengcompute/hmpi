@@ -21,6 +21,32 @@
 #ifndef ADIO_INCLUDE
 #define ADIO_INCLUDE
 
+#include <unistd.h>
+#include <time.h>
+#include "ad_env.h"
+
+enum
+{
+    AD_LOG_LEVEL_NON = 0,
+    AD_LOG_LEVEL_ERR,
+    AD_LOG_LEVEL_ALL
+};
+
+#ifndef ROMIO_LOG
+    #define ROMIO_LOG(level, format, args...) \
+        do {\
+            if (get_log_level() >= (level)) {\
+                printf("[%d][%ld][%s,%s,%d]"format"\n", getpid(), (long)time(NULL), __FILE__, __func__, __LINE__, ##args);\
+            }\
+        } while (0)
+
+    #define ROMIO_LOG_INT(val, level) ROMIO_LOG(level, #val"=%d", val)
+    #define ROMIO_LOG_LLU(val, level) ROMIO_LOG(level, #val"=%llu", val)
+    #define ROMIO_LOG_U64(val, level) ROMIO_LOG_LLU(((unsigned long long)(val)), (level))
+    #define ROMIO_LOG_LL(val, level) ROMIO_LOG(level, #val"=%lld", val)
+    #define ROMIO_LOG_STR(val, level) ROMIO_LOG(level, #val"=%s", val)
+#endif
+
 #ifdef SPPUX
 #define _POSIX_SOURCE
 #endif
@@ -305,6 +331,7 @@ typedef struct {
 #define ADIO_ZOIDFS              167   /* ZoidFS: the I/O forwarding fs */
 /* #define ADIO_BG               168 */
 #define ADIO_GPFS                  168
+#define ADIO_OCEANFS             169
 
 #define ADIO_SEEK_SET            SEEK_SET
 #define ADIO_SEEK_CUR            SEEK_CUR

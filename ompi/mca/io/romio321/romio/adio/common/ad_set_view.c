@@ -59,7 +59,9 @@ void ADIO_Set_view(ADIO_File fd, ADIO_Offset disp, MPI_Datatype etype,
 
         /* reset MPI-IO file pointer to point to the first byte that can
            be accessed in this view. */
-
+#ifdef ROMIO_OCEANFS
+    ADIOI_FILESYSTEM_VIEW(fd, error_code);
+#endif
         ADIOI_Datatype_iscontig(fd->filetype, &filetype_is_contig);
 	if (filetype_is_contig) fd->fp_ind = disp;
 	else {
