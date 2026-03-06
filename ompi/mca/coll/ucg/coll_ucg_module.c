@@ -324,6 +324,11 @@ int mca_coll_ucg_init_once()
             cm->blacklist = opal_argv_split(disable_list, ',');
         }
     } else {
+        if (cm->enable_coll != NULL) {
+            UCG_DEBUG("Enable %s", cm->enable_coll);
+            cm->priority = 90;
+            cm->whitelist = opal_argv_split(cm->enable_coll, ',');
+        }
         if (cm->disable_coll != NULL) {
             UCG_DEBUG("Disable %s", cm->disable_coll);
             cm->blacklist = opal_argv_split(cm->disable_coll, ',');
@@ -521,6 +526,16 @@ static int mca_coll_ucg_module_enable(mca_coll_base_module_t *module,
 
 static bool mca_coll_ucg_is_api_enable(const char *api)
 {
+    char **whitelist = mca_coll_ucg_component.whitelist;
+    if (whitelist != NULL) {
+        for (; *whitelist != NULL; ++whitelist) {
+            if (!strcmp(*whitelist, api)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     char **blacklist = mca_coll_ucg_component.blacklist;
     if (blacklist == NULL) {
         return true;
