@@ -44,13 +44,15 @@ typedef struct {
     int priority;               /* Priority of this component */
     int verbose;                /* Verbose level of this component */
     int max_rcache_size;        /* Max size of request cache */
-    char *disable_coll;         /* JUST FOR TEST, may remove later */
+    char *disable_coll;         /* Disabled op receiver */
+    char *enable_coll;          /* Enabled op receiver */
     char *topology;             /* Topology file path */
     int npolls;                 /* test progress npolls */
 
     ucg_context_h ucg_context;
 
     char **blacklist; /**  disabled collective operations */
+    char **whitelist; /**  enabled collective operations */
 } mca_coll_ucg_component_t;
 OMPI_MODULE_DECLSPEC extern mca_coll_ucg_component_t mca_coll_ucg_component;
 
