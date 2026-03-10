@@ -131,8 +131,13 @@ int MPI_File_open(MPI_Comm comm, ROMIO_CONST char *filename, int amode,
     /* --BEGIN ERROR HANDLING-- */
     if (error_code != MPI_SUCCESS)
     {
-        goto fn_fail;
+	/* ADIO_ResolveFileType() will print as informative a message as it
+	 * possibly can or call MPIO_Err_setmsg.  We just need to propagate 
+	 * the error up.
+	 */
+	goto fn_fail;
     }
+
     /* --END ERROR HANDLING-- */
 
     /* strip off prefix if there is one, but only skip prefixes
