@@ -308,6 +308,7 @@ int mca_coll_ucg_init_once()
 
     char *disable_list = "gather,igather,gatherv,igatherv,scatter,iscatter,reduce_scatter,ireduce_scatter,"
         "reduce_scatter_block,ireduce_scatter_block";
+    char *enable_list = "gather,gatherv,alltoallv";
     unsigned long long cpu_id;
     __asm__ volatile ("mrs %0, MIDR_EL1":"=r"(cpu_id));
     unsigned long long vendor = (cpu_id >> 0x18) & 0xFF;
@@ -328,6 +329,11 @@ int mca_coll_ucg_init_once()
             UCG_DEBUG("Enable %s", cm->enable_coll);
             cm->priority = 90;
             cm->whitelist = opal_argv_split(cm->enable_coll, ',');
+        } else {
+            if (orte_process_info.num_procs > 2048) {  // 2048=128*16
+                cm->priority = 90;
+                cm->whitelist = opal_argv_split(enable_list, ',');
+            }
         }
         if (cm->disable_coll != NULL) {
             UCG_DEBUG("Disable %s", cm->disable_coll);
@@ -343,7 +349,9 @@ int mca_coll_ucg_init_once()
     }
 
     /* everything is ready, register progress function. */
-    opal_progress_register(mca_coll_ucg_progress);
+    if (cm->priority >= 90) {
+        opal_progress_register(mca_coll_ucg_progress);
+    }
     cm->initialized = true;
     return OMPI_SUCCESS;
 
