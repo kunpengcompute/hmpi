@@ -22,8 +22,7 @@ noinst_HEADERS +=                      \
     adio/include/nopackage.h           \
     adio/include/romioconf-undefs.h    \
     adio/include/mpiu_external32.h     \
-    adio/include/hint_fns.h						 \
-    adio/include/ad_env.h
+    adio/include/hint_fns.h
 
 include $(top_srcdir)/adio/ad_gpfs/Makefile.mk
 include $(top_srcdir)/adio/ad_gpfs/bg/Makefile.mk
@@ -44,6 +43,5 @@ include $(top_srcdir)/adio/ad_testfs/Makefile.mk
 include $(top_srcdir)/adio/ad_ufs/Makefile.mk
 include $(top_srcdir)/adio/ad_xfs/Makefile.mk
 include $(top_srcdir)/adio/ad_zoidfs/Makefile.mk
-include $(top_srcdir)/adio/ad_oceanfs/Makefile.mk
 include $(top_srcdir)/adio/common/Makefile.mk
 
