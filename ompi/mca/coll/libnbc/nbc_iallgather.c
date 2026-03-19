@@ -73,15 +73,15 @@ static int nbc_allgather_init(const void* sendbuf, int sendcount, MPI_Datatype s
   p = ompi_comm_size (comm);
   int is_commsize_pow2 = !(p & (p - 1));
 
-  if (libnbc_iallgather_algorithm == 0) {
+  /* user forced dynamic decision */
+  if (libnbc_iallgather_algorithm == 1) {
     alg = NBC_ALLGATHER_LINEAR;
+  } else if (libnbc_iallgather_algorithm == 2 && is_commsize_pow2) {
+    alg = NBC_ALLGATHER_RDBL;
+  } else if (libnbc_iallgather_algorithm == 3) {
+    alg = NBC_ALLGATHER_RING;
   } else {
-    /* user forced dynamic decision */
-    if (libnbc_iallgather_algorithm == 1) {
-      alg = NBC_ALLGATHER_LINEAR;
-    } else if (libnbc_iallgather_algorithm == 2 && is_commsize_pow2) {
-      alg = NBC_ALLGATHER_RDBL;
-    } else if (libnbc_iallgather_algorithm == 3) {
+    if (rank >= 8192) { // 8192 = 512 * 16
       alg = NBC_ALLGATHER_RING;
     } else {
       alg = NBC_ALLGATHER_LINEAR;

@@ -388,7 +388,7 @@ int ompi_coll_tuned_alltoall_intra_dec_fixed(const void *sbuf, int scount,
         } else {
             alg = 1;
         }
-    } else {
+    } else if (communicator_size < 8192)  {
         if (total_dsize < 2048) {
             alg = 3;
         } else if (total_dsize < 8192) {
@@ -402,6 +402,8 @@ int ompi_coll_tuned_alltoall_intra_dec_fixed(const void *sbuf, int scount,
         } else {
             alg = 4;
         }
+    } else {
+        alg = 2;
     }
 
     return ompi_coll_tuned_alltoall_intra_do_this (sbuf, scount, sdtype,
@@ -443,8 +445,10 @@ int ompi_coll_tuned_alltoallv_intra_dec_fixed(const void *sbuf, const int *scoun
 		alg = 1;
     } else if (communicator_size < 1024) {
 		alg = 2;
-    } else {
+    } else if (communicator_size < 8192)  {
 		alg = 1;
+    } else {
+        alg = 2;
     }
 
     return ompi_coll_tuned_alltoallv_intra_do_this (sbuf, scounts, sdisps, sdtype,
@@ -476,7 +480,12 @@ int ompi_coll_tuned_alltoallw_intra_dec_fixed(const void *sbuf, const int *scoun
      *
      * default use basic_linear
      */
-    alg = 1;
+    if (communicator_size < 8192) {
+        alg = 1;
+    } else {
+        alg = 2
+    }
+
     return ompi_coll_tuned_alltoallw_intra_do_this (sbuf, scounts, sdisps, sdtypes,
                                                     rbuf, rcounts, rdisps, rdtypes,
                                                     comm, module,
@@ -974,7 +983,7 @@ int ompi_coll_tuned_reduce_scatter_intra_dec_fixed( const void *sbuf, void *rbuf
             } else {
                 alg = 4;
             }
-        } else {
+        } else if (communicator_size < 8192) {
             if (total_dsize < 1024) {
                 alg = 1;
             } else if (total_dsize < 8192) {
@@ -982,6 +991,8 @@ int ompi_coll_tuned_reduce_scatter_intra_dec_fixed( const void *sbuf, void *rbuf
             } else {
                 alg = 4;
             }
+        } else {
+            alg = 2;
         }
     }
 
@@ -1090,7 +1101,7 @@ int ompi_coll_tuned_reduce_scatter_block_intra_dec_fixed(const void *sbuf, void 
             } else {
                 alg = 4;
             }
-        } else {
+        } else if (communicator_size < 8192) {
             if (total_dsize < 4) {
                 alg = 3;
             } else if (total_dsize < 16) {
@@ -1102,6 +1113,8 @@ int ompi_coll_tuned_reduce_scatter_block_intra_dec_fixed(const void *sbuf, void 
             } else {
                 alg = 4;
             }
+        } else {
+            alg = 3;
         }
     }
 

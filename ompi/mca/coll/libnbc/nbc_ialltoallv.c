@@ -59,20 +59,18 @@ static int nbc_alltoallv_init(const void* sendbuf, const int *sendcounts, const 
 
   rank = ompi_comm_rank (comm);
   p = ompi_comm_size (comm);
-  
-  if (libnbc_ialltoallv_algorithm == 0) {
+
+  if (libnbc_ialltoallv_algorithm == 1) {
+    alg = NBC_ALLTOALLV_LINEAR;
+  } else if (libnbc_ialltoallv_algorithm == 2) {
+    alg = NBC_ALLTOALLV_PAIRWISE;
+  } else if (libnbc_ialltoallv_algorithm == 3 && inplace) {
+    alg = NBC_ALLTOALLV_INPLACE;
+  } else {
     if (inplace) {
       alg = NBC_ALLTOALLV_INPLACE;
-    } else {
-      alg = NBC_ALLTOALLV_LINEAR;
-    }
-  } else {
-    if (libnbc_ialltoallv_algorithm == 1) {
-      alg = NBC_ALLTOALLV_LINEAR;
-    } else if (libnbc_ialltoallv_algorithm == 2) {
+    } else if (p >= 8192) { // 8192 = 512 * 16
       alg = NBC_ALLTOALLV_PAIRWISE;
-    } else if (libnbc_ialltoallv_algorithm == 3 && inplace) {
-      alg = NBC_ALLTOALLV_INPLACE;
     } else {
       alg = NBC_ALLTOALLV_LINEAR;
     }

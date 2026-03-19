@@ -95,12 +95,22 @@ static int nbc_alltoall_init(const void* sendbuf, int sendcount, MPI_Datatype se
     return res;
   }
 
-  if (libnbc_ialltoall_algorithm == 0) {
+  if  (libnbc_ialltoall_algorithm == 1) {
+    alg = NBC_A2A_LINEAR;
+  } else if (libnbc_ialltoall_algorithm == 2) {
+    alg = NBC_A2A_PAIRWISE;
+  } else if (libnbc_ialltoall_algorithm == 3) {
+    alg = NBC_A2A_DISS;
+  } else if (libnbc_ialltoall_algorithm == 4 && inplace) {
+    alg = NBC_A2A_INPLACE;
+  } else {
     /* algorithm selection */
     a2asize = sndsize * sendcount * p;
     /* this number is optimized for TCP on odin.cs.indiana.edu */
     if (inplace) {
       alg = NBC_A2A_INPLACE;
+    } else if(p >= 8192) { // 8192 = 512 * 16
+      alg = NBC_A2A_PAIRWISE;
     } else if((p <= 8) && ((a2asize < 1<<17) || (sndsize*sendcount < 1<<12))) {
       /* just send as fast as we can if we have less than 8 peers, if the
       * total communicated size is smaller than 1<<17 *and* if we don't
@@ -111,16 +121,6 @@ static int nbc_alltoall_init(const void* sendbuf, int sendcount, MPI_Datatype se
       alg = NBC_A2A_LINEAR;
     } else
       alg = NBC_A2A_LINEAR; /*NBC_A2A_PAIRWISE;*/
-  } else {
-    if  (libnbc_ialltoall_algorithm == 1) {
-      alg = NBC_A2A_LINEAR;
-    } else if (libnbc_ialltoall_algorithm == 2) {
-      alg = NBC_A2A_PAIRWISE;
-    } else if (libnbc_ialltoall_algorithm == 3) {
-      alg = NBC_A2A_DISS;
-    } else if (libnbc_ialltoall_algorithm == 4 && inplace) {
-      alg = NBC_A2A_INPLACE;
-    }
   }
 
   /* allocate temp buffer if we need one */
