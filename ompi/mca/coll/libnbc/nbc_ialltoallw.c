@@ -59,19 +59,19 @@ static int nbc_alltoallw_init(const void* sendbuf, const int *sendcounts, const 
   rank = ompi_comm_rank (comm);
   p = ompi_comm_size (comm);
 
-  if (libnbc_ialltoallw_algorithm == 0) {
+  if (libnbc_ialltoallw_algorithm == 1) {
+    alg = NBC_ALLTOALLW_LINEAR;
+  } else if (libnbc_ialltoallw_algorithm == 2) {
+    alg = NBC_ALLTOALLW_PAIRWISE;
+  } else if (libnbc_ialltoallw_algorithm == 3 && inplace) {
+    alg = NBC_ALLTOALLW_INPLACE;
+  } else {
+    alg = NBC_ALLTOALLW_LINEAR;
+  } else {
     if (inplace) {
       alg = NBC_ALLTOALLW_INPLACE;
-    } else {
-      alg = NBC_ALLTOALLW_LINEAR;
-    }
-  } else {
-    if (libnbc_ialltoallw_algorithm == 1) {
-      alg = NBC_ALLTOALLW_LINEAR;
-    } else if (libnbc_ialltoallw_algorithm == 2) {
+    } else if (p >= 8192) { // 8192 = 512 * 16
       alg = NBC_ALLTOALLW_PAIRWISE;
-    } else if (libnbc_ialltoallw_algorithm == 3 && inplace) {
-      alg = NBC_ALLTOALLW_INPLACE;
     } else {
       alg = NBC_ALLTOALLW_LINEAR;
     }
