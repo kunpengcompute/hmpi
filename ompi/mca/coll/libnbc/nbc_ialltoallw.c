@@ -66,8 +66,6 @@ static int nbc_alltoallw_init(const void* sendbuf, const int *sendcounts, const 
   } else if (libnbc_ialltoallw_algorithm == 3 && inplace) {
     alg = NBC_ALLTOALLW_INPLACE;
   } else {
-    alg = NBC_ALLTOALLW_LINEAR;
-  } else {
     if (inplace) {
       alg = NBC_ALLTOALLW_INPLACE;
     } else if (p >= 8192) { // 8192 = 512 * 16
