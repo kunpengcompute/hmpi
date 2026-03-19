@@ -419,8 +419,6 @@ void ADIOI_Calc_my_req(ADIO_File fd, ADIO_Offset *offset_list, ADIO_Offset *len_
 #endif
 }
 
-
-
 void ADIOI_Calc_others_req(ADIO_File fd, int count_my_req_procs, 
 				int *count_my_req_per_proc,
 				ADIOI_Access *my_req, 
@@ -437,8 +435,12 @@ void ADIOI_Calc_others_req(ADIO_File fd, int count_my_req_procs,
    requests of proc. i lie in this process's file domain. */
 
     int *count_others_req_per_proc, count_others_req_procs;
-    int i;
+    int i, j;
+    MPI_Request *requests;
+    MPI_Status *statuses;
     ADIOI_Access *others_req;
+    char *x;
+    int use_coll = 0;
 
     int *sendcounts, *senddispls, sendtotal;
     int *recvcounts, *recvdispls, recvtotal;
@@ -475,69 +477,112 @@ void ADIOI_Calc_others_req(ADIO_File fd, int count_my_req_procs,
 	else others_req[i].count = 0;
     }
 
-    sendcounts = ADIOI_Malloc(nprocs * sizeof(int));
-    recvcounts = ADIOI_Malloc(nprocs * sizeof(int));
-    senddispls = ADIOI_Malloc(nprocs * sizeof(int));
-    recvdispls = ADIOI_Malloc(nprocs * sizeof(int));
-    sendtotal = 0;
-    recvtotal = 0;
-
-    for (i = 0; i < nprocs; i++) {
-        sendcounts[i] = my_req[i].count;
-        recvcounts[i] = others_req[i].count;
-        senddispls[i] = sendtotal;
-        recvdispls[i] = recvtotal;
-        sendtotal += sendcounts[i];
-        recvtotal += recvcounts[i];
+    x = getenv("OMPI_ROMIO_USE_COLL");
+    if (x) {
+        use_coll = atoi(x);
     }
 
-    sendbuf_offs = ADIOI_Malloc(sendtotal * sizeof(ADIO_Offset));
-    sendbuf_lens = ADIOI_Malloc(sendtotal * sizeof(ADIO_Offset));
-    recvbuf_offs = ADIOI_Calloc(recvtotal, sizeof(ADIO_Offset));
-    recvbuf_lens = ADIOI_Calloc(recvtotal, sizeof(ADIO_Offset));
-    for (i = 0; i < nprocs; i++) {
-        memcpy(sendbuf_offs + senddispls[i], my_req[i].offsets, sendcounts[i] * sizeof(ADIO_Offset));
-        memcpy(sendbuf_lens + senddispls[i], my_req[i].lens, sendcounts[i] * sizeof(ADIO_Offset));
+    if (!use_coll){
+/* now send the calculated offsets and lengths to respective processes */
+        requests = (MPI_Request *)
+        ADIOI_Malloc(1+2*(count_my_req_procs+count_others_req_procs)*sizeof(MPI_Request)); 
+/* +1 to avoid a 0-size malloc */
+
+        j = 0;
+        for (i=0; i<nprocs; i++) {
+        if (others_req[i].count) {
+            MPI_Irecv(others_req[i].offsets, others_req[i].count, 
+                        ADIO_OFFSET, i, i+myrank, fd->comm, &requests[j]);
+            j++;
+            MPI_Irecv(others_req[i].lens, others_req[i].count, 
+                        ADIO_OFFSET, i, i+myrank+1, fd->comm, &requests[j]);
+            j++;
+        }
+        }
+
+        for (i=0; i < nprocs; i++) {
+        if (my_req[i].count) {
+            MPI_Isend(my_req[i].offsets, my_req[i].count, 
+                        ADIO_OFFSET, i, i+myrank, fd->comm, &requests[j]);
+            j++;
+            MPI_Isend(my_req[i].lens, my_req[i].count, 
+                        ADIO_OFFSET, i, i+myrank+1, fd->comm, &requests[j]);
+            j++;
+        }
+        }
+
+        if (j) {
+        statuses = (MPI_Status *) ADIOI_Malloc(j * sizeof(MPI_Status));
+        MPI_Waitall(j, requests, statuses);
+        ADIOI_Free(statuses);
+        }
+
+        ADIOI_Free(requests);
+    } else {
+        sendcounts = ADIOI_Malloc(nprocs * sizeof(int));
+        recvcounts = ADIOI_Malloc(nprocs * sizeof(int));
+        senddispls = ADIOI_Malloc(nprocs * sizeof(int));
+        recvdispls = ADIOI_Malloc(nprocs * sizeof(int));
+        sendtotal = 0;
+        recvtotal = 0;
+
+        for (i = 0; i < nprocs; i++) {
+            sendcounts[i] = my_req[i].count;
+            recvcounts[i] = others_req[i].count;
+            senddispls[i] = sendtotal;
+            recvdispls[i] = recvtotal;
+            sendtotal += sendcounts[i];
+            recvtotal += recvcounts[i];
+        }
+
+        sendbuf_offs = ADIOI_Malloc(sendtotal * sizeof(ADIO_Offset));
+        sendbuf_lens = ADIOI_Malloc(sendtotal * sizeof(ADIO_Offset));
+        recvbuf_offs = ADIOI_Calloc(recvtotal, sizeof(ADIO_Offset));
+        recvbuf_lens = ADIOI_Calloc(recvtotal, sizeof(ADIO_Offset));
+        for (i = 0; i < nprocs; i++) {
+            memcpy(sendbuf_offs + senddispls[i], my_req[i].offsets, sendcounts[i] * sizeof(ADIO_Offset));
+            memcpy(sendbuf_lens + senddispls[i], my_req[i].lens, sendcounts[i] * sizeof(ADIO_Offset));
+        }
+        MPI_Alltoallv(
+            sendbuf_offs,
+            sendcounts,
+            senddispls,
+            ADIO_OFFSET,
+            recvbuf_offs,
+            recvcounts,
+            recvdispls,
+            ADIO_OFFSET,
+            fd->comm
+        );
+
+        MPI_Alltoallv(
+            sendbuf_lens,
+            sendcounts,
+            senddispls,
+            ADIO_OFFSET,
+            recvbuf_lens,
+            recvcounts,
+            recvdispls,
+            ADIO_OFFSET,
+            fd->comm
+        );
+
+        for (i = 0; i < nprocs; i++) {
+            memcpy(others_req[i].offsets, recvbuf_offs + recvdispls[i], recvcounts[i] * sizeof(ADIO_Offset));
+            memcpy(others_req[i].lens, recvbuf_lens + recvdispls[i], recvcounts[i] * sizeof(ADIO_Offset));
+        }
+        
+        MPI_Barrier(fd->comm);
+
+        ADIOI_Free(sendbuf_offs);
+        ADIOI_Free(sendbuf_lens);
+        ADIOI_Free(recvbuf_offs);
+        ADIOI_Free(recvbuf_lens);
+        ADIOI_Free(sendcounts);
+        ADIOI_Free(senddispls);
+        ADIOI_Free(recvcounts);
+        ADIOI_Free(recvdispls);
     }
-    MPI_Alltoallv(
-        sendbuf_offs,
-        sendcounts,
-        senddispls,
-        ADIO_OFFSET,
-        recvbuf_offs,
-        recvcounts,
-        recvdispls,
-        ADIO_OFFSET,
-        fd->comm
-    );
-
-    MPI_Alltoallv(
-        sendbuf_lens,
-        sendcounts,
-        senddispls,
-        ADIO_OFFSET,
-        recvbuf_lens,
-        recvcounts,
-        recvdispls,
-        ADIO_OFFSET,
-        fd->comm
-    );
-
-    for (i = 0; i < nprocs; i++) {
-        memcpy(others_req[i].offsets, recvbuf_offs + recvdispls[i], recvcounts[i] * sizeof(ADIO_Offset));
-        memcpy(others_req[i].lens, recvbuf_lens + recvdispls[i], recvcounts[i] * sizeof(ADIO_Offset));
-    }
-    
-    MPI_Barrier(fd->comm);
-
-    ADIOI_Free(sendbuf_offs);
-    ADIOI_Free(sendbuf_lens);
-    ADIOI_Free(recvbuf_offs);
-    ADIOI_Free(recvbuf_lens);
-    ADIOI_Free(sendcounts);
-    ADIOI_Free(senddispls);
-    ADIOI_Free(recvcounts);
-    ADIOI_Free(recvdispls);
     ADIOI_Free(count_others_req_per_proc);
 
     *count_others_req_procs_ptr = count_others_req_procs;
