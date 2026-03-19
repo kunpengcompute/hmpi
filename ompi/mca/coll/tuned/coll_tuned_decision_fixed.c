@@ -483,7 +483,7 @@ int ompi_coll_tuned_alltoallw_intra_dec_fixed(const void *sbuf, const int *scoun
     if (communicator_size < 8192) {
         alg = 1;
     } else {
-        alg = 2
+        alg = 2;
     }
 
     return ompi_coll_tuned_alltoallw_intra_do_this (sbuf, scounts, sdisps, sdtypes,
