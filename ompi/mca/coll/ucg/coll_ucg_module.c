@@ -306,15 +306,14 @@ int mca_coll_ucg_init_once()
         }
     }
 
-    char *disable_list = "gather,igather,gatherv,igatherv,scatter,iscatter,reduce_scatter,ireduce_scatter,"
-        "reduce_scatter_block,ireduce_scatter_block";
-    char *enable_list = "gather,igather,gatherv,igatherv,scatter,iscatter,scatterv,iscatterv,"
-        "ireduce_scatter,ireduce_scatter_block,iallgatherv";
+    char *disable_list = "gather,igather,gatherv,igatherv,scatter,iscatter,reduce_scatter,ireduce_scatter";
+    char *enable_list = "gather,igather,gatherv,igatherv,scatter,iscatter,scatterv,iscatterv,ireduce_scatter,iallgatherv";
     unsigned long long cpu_id;
     __asm__ volatile ("mrs %0, MIDR_EL1":"=r"(cpu_id));
     unsigned long long vendor = (cpu_id >> 0x18) & 0xFF;
     unsigned long long part_id = (cpu_id >> 0x4) & 0xFFF;
     if (!((vendor == 0x48) && (part_id == 0xD22))) {
+        memset(cm->ucg_list, 0, sizeof(cm->ucg_list));
         if (cm->disable_coll != NULL) {
             size_t len = strlen(disable_list) + strlen(cm->disable_coll) + 1;
             char *disable_combine = (char *)malloc(len + 1);
@@ -326,6 +325,7 @@ int mca_coll_ucg_init_once()
             cm->blacklist = opal_argv_split(disable_list, ',');
         }
     } else {
+        memset(cm->ucg_list, -1, sizeof(cm->ucg_list));
         if (cm->enable_coll != NULL) {
             UCG_DEBUG("Enable %s", cm->enable_coll);
             cm->priority = 90;
@@ -533,19 +533,57 @@ static int mca_coll_ucg_module_enable(mca_coll_base_module_t *module,
     return OMPI_SUCCESS;
 }
 
+static ucg_collective_type_t mca_coll_ucg_str_to_op(const char *api)
+{
+    if (0 == strcmp(api, "allgather")) return UCG_COLLECTIVE_OP_ALLGATHERV;
+    if (0 == strcmp(api, "iallgather")) return UCG_COLLECTIVE_OP_IALLGATHERV;
+    if (0 == strcmp(api, "allreduce")) return UCG_COLLECTIVE_OP_ALLREDUCE;
+    if (0 == strcmp(api, "iallreduce")) return UCG_COLLECTIVE_OP_IALLREDUCE;
+    if (0 == strcmp(api, "alltoallv")) return UCG_COLLECTIVE_OP_ALLTOALLV;
+    if (0 == strcmp(api, "ialltoallv")) return UCG_COLLECTIVE_OP_IALLTOALLV;
+    if (0 == strcmp(api, "barrier")) return UCG_COLLECTIVE_OP_BARRIER;
+    if (0 == strcmp(api, "ibarrier")) return UCG_COLLECTIVE_OP_IBARRIER;
+    if (0 == strcmp(api, "bcast")) return UCG_COLLECTIVE_OP_BCAST;
+    if (0 == strcmp(api, "ibcast")) return UCG_COLLECTIVE_OP_IBCAST;
+    if (0 == strcmp(api, "gather")) return UCG_COLLECTIVE_OP_GATHER;
+    if (0 == strcmp(api, "igather")) return UCG_COLLECTIVE_OP_IGATHER;
+    if (0 == strcmp(api, "gatherv")) return UCG_COLLECTIVE_OP_GATHERV;
+    if (0 == strcmp(api, "igatherv")) return UCG_COLLECTIVE_OP_IGATHERV;
+    if (0 == strcmp(api, "reduce_scatter_block")) return UCG_COLLECTIVE_OP_REDUCE_SCATTER_BLOCK;
+    if (0 == strcmp(api, "ireduce_scatter_block")) return UCG_COLLECTIVE_OP_IREDUCE_SCATTER_BLOCK;
+    if (0 == strcmp(api, "reduce_scatter")) return UCG_COLLECTIVE_OP_REDUCE_SCATTER;
+    if (0 == strcmp(api, "ireduce_scatter")) return UCG_COLLECTIVE_OP_IREDUCE_SCATTER;
+    if (0 == strcmp(api, "scatter")) return UCG_COLLECTIVE_OP_SCATTER;
+    if (0 == strcmp(api, "iscatter")) return UCG_COLLECTIVE_OP_ISCATTER;
+    if (0 == strcmp(api, "scatterv")) return UCG_COLLECTIVE_OP_SCATTERV;
+    if (0 == strcmp(api, "iscatterv")) return UCG_COLLECTIVE_OP_ISCATTERV;
+    return UCG_COLLECTIVE_OP_SIZE;
+}
+
 static bool mca_coll_ucg_is_api_enable(const char *api)
 {
+    ucg_collective_type_t op = mca_coll_ucg_str_to_op(api);
+
     char **whitelist = mca_coll_ucg_component.whitelist;
+    char **blacklist = mca_coll_ucg_component.blacklist;
+
     if (whitelist != NULL) {
+        if (blacklist != NULL) {
+            for (; *blacklist != NULL; ++blacklist) {
+                if (!strcmp(*blacklist, api)) {
+                    return false;
+                }
+            }
+        }
         for (; *whitelist != NULL; ++whitelist) {
             if (!strcmp(*whitelist, api)) {
+                mca_coll_ucg_component.ucg_list[op] = 1;
                 return true;
             }
         }
         return false;
     }
 
-    char **blacklist = mca_coll_ucg_component.blacklist;
     if (blacklist == NULL) {
         return true;
     }

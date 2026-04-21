@@ -35,6 +35,32 @@ BEGIN_C_DECLS
     #define PMIX_STRING             OPAL_STRING
 #endif
 
+typedef enum {
+    UCG_COLLECTIVE_OP_ALLGATHERV = 0,
+    UCG_COLLECTIVE_OP_IALLGATHERV,
+    UCG_COLLECTIVE_OP_ALLREDUCE,
+    UCG_COLLECTIVE_OP_IALLREDUCE,
+    UCG_COLLECTIVE_OP_ALLTOALLV,
+    UCG_COLLECTIVE_OP_IALLTOALLV,
+    UCG_COLLECTIVE_OP_BARRIER,
+    UCG_COLLECTIVE_OP_IBARRIER,
+    UCG_COLLECTIVE_OP_BCAST,
+    UCG_COLLECTIVE_OP_IBCAST,
+    UCG_COLLECTIVE_OP_GATHER,
+    UCG_COLLECTIVE_OP_IGATHER,
+    UCG_COLLECTIVE_OP_GATHERV,
+    UCG_COLLECTIVE_OP_IGATHERV,
+    UCG_COLLECTIVE_OP_REDUCE_SCATTER_BLOCK,
+    UCG_COLLECTIVE_OP_IREDUCE_SCATTER_BLOCK,
+    UCG_COLLECTIVE_OP_REDUCE_SCATTER,
+    UCG_COLLECTIVE_OP_IREDUCE_SCATTER,
+    UCG_COLLECTIVE_OP_SCATTER,
+    UCG_COLLECTIVE_OP_ISCATTER,
+    UCG_COLLECTIVE_OP_SCATTERV,
+    UCG_COLLECTIVE_OP_ISCATTERV,
+    UCG_COLLECTIVE_OP_SIZE
+} ucg_collective_type_t;
+
 typedef struct {
     /** Base coll component */
     mca_coll_base_component_t super;
@@ -48,6 +74,7 @@ typedef struct {
     char *enable_coll;          /* Enabled op receiver */
     char *topology;             /* Topology file path */
     int npolls;                 /* test progress npolls */
+    int ucg_list[UCG_COLLECTIVE_OP_SIZE];  /* Collective op list */
 
     ucg_context_h ucg_context;
 

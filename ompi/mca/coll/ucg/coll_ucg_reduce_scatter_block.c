@@ -49,6 +49,13 @@ int mca_coll_ucg_reduce_scatter_block(const void *sbuf, void *rbuf, int rcount,
 {
     UCG_DEBUG("ucg reduce_scatter_block");
 
+    int flag = mca_coll_ucg_component.ucg_list[UCG_COLLECTIVE_OP_REDUCE_SCATTER_BLOCK];
+    if (flag == 0) {
+        goto fallback;
+    } else if (flag == -1 && comm->c_local_group->grp_proc_count < 8192) {
+        goto fallback;
+    }
+
     mca_coll_ucg_module_t *ucg_module = (mca_coll_ucg_module_t*)module;
     mca_coll_ucg_req_t coll_req;
     OBJ_CONSTRUCT(&coll_req, mca_coll_ucg_req_t);
@@ -87,6 +94,13 @@ int mca_coll_ucg_reduce_scatter_block_cache(const void *sbuf, void *rbuf, int rc
                                mca_coll_base_module_t *module)
 {
     UCG_DEBUG("ucg reduce_scatter_block cache");
+
+    int flag = mca_coll_ucg_component.ucg_list[UCG_COLLECTIVE_OP_REDUCE_SCATTER_BLOCK];
+    if (flag == 0) {
+        goto fallback;
+    } else if (flag == -1 && comm->c_local_group->grp_proc_count < 8192) {
+        goto fallback;
+    }
 
     mca_coll_ucg_module_t *ucg_module = (mca_coll_ucg_module_t*)module;
     mca_coll_ucg_args_t args = {
@@ -127,6 +141,13 @@ int mca_coll_ucg_ireduce_scatter_block(const void *sbuf, void *rbuf, int rcount,
                                  mca_coll_base_module_t *module)
 {
     UCG_DEBUG("ucg ireduce_scatter_block");
+
+    int flag = mca_coll_ucg_component.ucg_list[UCG_COLLECTIVE_OP_IREDUCE_SCATTER_BLOCK];
+    if (flag == 0) {
+        goto fallback;
+    } else if (flag == -1 && comm->c_local_group->grp_proc_count < 8192) {
+        goto fallback;
+    }
 
     mca_coll_ucg_module_t *ucg_module = (mca_coll_ucg_module_t*)module;
 
@@ -170,6 +191,13 @@ int mca_coll_ucg_ireduce_scatter_block_cache(const void *sbuf, void *rbuf, int r
                                        mca_coll_base_module_t *module)
 {
     UCG_DEBUG("ucg ireduce_scatter_block cache");
+
+    int flag = mca_coll_ucg_component.ucg_list[UCG_COLLECTIVE_OP_IREDUCE_SCATTER_BLOCK];
+    if (flag == 0) {
+        goto fallback;
+    } else if (flag == -1 && comm->c_local_group->grp_proc_count < 8192) {
+        goto fallback;
+    }
 
     mca_coll_ucg_module_t *ucg_module = (mca_coll_ucg_module_t*)module;
     mca_coll_ucg_args_t args = {
