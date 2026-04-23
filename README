@@ -1,6 +1,6 @@
-# HMPI
+# Hyper MPI
 
-## Release Notes
+## 🔥Release Notes
 
 - [2026/03] UCG模块新增集合通信MPI_Scatter、MPI_Iscatter、MPI_Gather、MPI_Igather、MPI_Gatherv、MPI_Igatherv算法适配大规模应用场景。
 - [2025/12] 修复了部分已知问题。
