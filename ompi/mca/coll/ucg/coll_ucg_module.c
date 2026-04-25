@@ -306,8 +306,8 @@ int mca_coll_ucg_init_once()
         }
     }
 
-    char *disable_list = "gather,igather,gatherv,igatherv,scatter,iscatter,reduce_scatter,ireduce_scatter";
-    char *enable_list = "gather,igather,gatherv,igatherv,scatter,iscatter,scatterv,iscatterv,ireduce_scatter,iallgatherv";
+    char *disable_list = "gather,igather,gatherv,igatherv,scatter,iscatter";
+    char *enable_list = "gather,igather,gatherv,igatherv,scatter,iscatter,scatterv,iscatterv,iallgatherv";
     unsigned long long cpu_id;
     __asm__ volatile ("mrs %0, MIDR_EL1":"=r"(cpu_id));
     unsigned long long vendor = (cpu_id >> 0x18) & 0xFF;
