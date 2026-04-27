@@ -125,6 +125,16 @@ OMPI_DECLSPEC extern bool ompi_have_sparse_group_storage;
 OMPI_DECLSPEC extern bool ompi_use_sparse_group_storage;
 
 /**
+ * Whether group_union opt algorithm is used or not.
+ */
+OMPI_DECLSPEC extern bool ompi_use_group_union_opt;
+
+/**
+ * group_union opt hash table size.
+ */
+OMPI_DECLSPEC extern uint32_t ompi_group_union_opt_hash_size;
+
+/**
  * Cutoff point for calling add_procs for all processes
  */
 OMPI_DECLSPEC extern uint32_t ompi_add_procs_cutoff;

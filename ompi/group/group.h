@@ -38,6 +38,7 @@
 #include "mpi.h"
 #include "opal/class/opal_pointer_array.h"
 #include "opal/util/output.h"
+#include "ompi/runtime/params.h"
 
 BEGIN_C_DECLS
 
@@ -113,6 +114,22 @@ struct ompi_predefined_group_t {
     struct ompi_group_t group;
     char padding[PREDEFINED_GROUP_PAD - sizeof(ompi_group_t)];
 };
+
+/* Hash table entry for process name lookup */
+typedef struct proc_hash_entry {
+    ompi_process_name_t proc_name;
+    int proc_index;
+    struct proc_hash_entry *next;
+} proc_hash_entry_t;
+
+/* Simple hash function for process names */
+static unsigned int proc_hash_func(ompi_process_name_t proc_name)
+{
+    /* Simple hash using the jobid and vpid */
+    unsigned int hash = (proc_name.jobid ^ (proc_name.jobid >> 16)) +
+                        (proc_name.vpid ^ (proc_name.vpid >> 16));
+    return hash % ompi_group_union_opt_hash_size;
+}
 
 typedef struct ompi_predefined_group_t ompi_predefined_group_t;
 
