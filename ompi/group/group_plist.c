@@ -29,9 +29,133 @@
 #include "ompi/group/group.h"
 #include "ompi/constants.h"
 #include "ompi/proc/proc.h"
+#include "ompi/runtime/params.h"
 #include "mpi.h"
 
 #include <math.h>
+
+/* only the vpid and jobid of the proc name are required. ompi_proc_lookup is deleted when proc is sentinel proc*/
+static inline opal_process_name_t ompi_group_get_proc_name_for_group_union (ompi_group_t *group, int rank)
+{
+
+    ompi_proc_t *proc = NULL;
+#if OMPI_GROUP_SPARSE
+    do {
+        if (OMPI_GROUP_IS_DENSE(group)) {
+            proc = group->grp_proc_pointers[rank];
+            break;
+        }
+        int ranks1 = rank;
+        ompi_group_translate_ranks (group, 1, &ranks1, group->grp_parent_group_ptr, &rank);
+        group = group->grp_parent_group_ptr;
+    } while (1);
+#else
+    proc = group->grp_proc_pointers[rank];
+#endif
+    if (ompi_proc_is_sentinel (proc)) {
+        return ompi_proc_sentinel_to_name ((intptr_t) proc);
+    }
+
+    return proc->super.proc_name;
+
+}
+/* Optimized version with O(m+n) time complexity using hash table */
+static int ompi_group_dense_overlap_opt (ompi_group_t *group1, ompi_group_t *group2, opal_bitmap_t *bitmap)
+{
+    proc_hash_entry_t **hash_table;
+    ompi_process_name_t proc_name;
+    unsigned int hash;
+    int rc, overlap_count;
+    int i, j;
+
+    overlap_count = 0;
+
+    /* Allocate and initialize hash table */
+    hash_table = (proc_hash_entry_t **)calloc(ompi_group_union_opt_hash_size, sizeof(proc_hash_entry_t *));
+    if (NULL == hash_table) {
+#if OPAL_ENABLE_DEBUG
+        opal_output(0, "hash_table alloc memory fail");
+#endif
+        return OPAL_ERR_OUT_OF_RESOURCE;
+    }
+
+    /* Build hash table from group2 - O(n) */
+    for (j = 0; j < group2->grp_proc_count; ++j) {
+        proc_name = ompi_group_get_proc_name_for_group_union(group2, j);
+        hash = proc_hash_func(proc_name);
+
+        proc_hash_entry_t *entry = (proc_hash_entry_t *)malloc(sizeof(proc_hash_entry_t));
+        if (NULL == entry) {
+            /* Clean up hash table on allocation failure */
+            for (i = 0; i < ompi_group_union_opt_hash_size; i++) {
+                proc_hash_entry_t *next;
+                proc_hash_entry_t *current = hash_table[i];
+                while (current != NULL) {
+                    next = current->next;
+                    free(current);
+                    current = next;
+                }
+            }
+            free(hash_table);
+#if OPAL_ENABLE_DEBUG
+            opal_output(0, "entry alloc memory fail");
+#endif
+            return OPAL_ERR_OUT_OF_RESOURCE;
+        }
+
+        entry->proc_name = proc_name;
+        entry->proc_index = j;
+        entry->next = hash_table[hash];
+        hash_table[hash] = entry;
+    }
+
+    /* Lookup group1 processes in hash table - O(m) */
+    for (i = 0; i < group1->grp_proc_count; ++i) {
+        proc_name = ompi_group_get_proc_name_for_group_union(group1, i);
+        hash = proc_hash_func(proc_name);
+
+        proc_hash_entry_t *entry = hash_table[hash];
+        while (entry != NULL) {
+            if (0 == opal_compare_proc(proc_name, entry->proc_name)) {
+                rc = opal_bitmap_set_bit(bitmap, entry->proc_index);
+                if (OPAL_SUCCESS != rc) {
+                    /* Clean up hash table on error */
+                    for (j = 0; j < ompi_group_union_opt_hash_size; j++) {
+                        proc_hash_entry_t *next;
+                        proc_hash_entry_t *current = hash_table[j];
+                        while (current != NULL) {
+                            next = current->next;
+                            free(current);
+                            current = next;
+                        }
+                    }
+                    free(hash_table);
+#if OPAL_ENABLE_DEBUG
+                    opal_output(0, "opal_bitmap_set_bit error is %d", rc);
+#endif
+                    return rc;
+                }
+                ++overlap_count;
+                break;
+            }
+            entry = entry->next;
+        }
+    }
+
+    /* Clean up hash table */
+    for (i = 0; i < ompi_group_union_opt_hash_size; i++) {
+        proc_hash_entry_t *next;
+        proc_hash_entry_t *current = hash_table[i];
+        while (current != NULL) {
+            next = current->next;
+            free(current);
+            current = next;
+        }
+    }
+    free(hash_table);
+
+    return overlap_count;
+}
 
 static int ompi_group_dense_overlap (ompi_group_t *group1, ompi_group_t *group2, opal_bitmap_t *bitmap)
 {
@@ -163,9 +287,13 @@ int ompi_group_union (ompi_group_t* group1, ompi_group_t* group2,
     if (OPAL_SUCCESS != rc) {
         return rc;
     }
-
-    /* check group2 elements to see if they need to be included in the list */
-    overlap_count = ompi_group_dense_overlap (group1, group2, &bitmap);
+    if (ompi_use_group_union_opt) {
+        overlap_count = ompi_group_dense_overlap_opt (group1, group2, &bitmap);
+    }
+    else {
+        overlap_count = ompi_group_dense_overlap (group1, group2, &bitmap);
+    }
+   
     if (0 > overlap_count) {
         OBJ_DESTRUCT(&bitmap);
         return overlap_count;

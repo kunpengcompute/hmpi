@@ -61,6 +61,8 @@ char *ompi_mpi_show_mca_params_file = NULL;
 bool ompi_mpi_keep_fqdn_hostnames = false;
 bool ompi_have_sparse_group_storage = OPAL_INT_TO_BOOL(OMPI_GROUP_SPARSE);
 bool ompi_use_sparse_group_storage = OPAL_INT_TO_BOOL(OMPI_GROUP_SPARSE);
+bool ompi_use_group_union_opt = false;
+uint32_t ompi_group_union_opt_hash_size = 1024;
 
 bool ompi_mpi_yield_when_idle = false;
 int ompi_mpi_event_tick_rate = -1;
@@ -262,6 +264,22 @@ int ompi_mpi_register_params(void)
                        true);
         ompi_use_sparse_group_storage = false;
     }
+
+    ompi_use_group_union_opt = false;
+    (void) mca_base_var_register("ompi", "group", "union", "opt",
+                                 "Whether group_union opt algorithm is used or not.",
+                                 MCA_BASE_VAR_TYPE_BOOL, NULL, 0, 0,
+                                 OPAL_INFO_LVL_9,
+                                 MCA_BASE_VAR_SCOPE_READONLY,
+                                 &ompi_use_group_union_opt);
+
+    ompi_group_union_opt_hash_size = 1024;
+    (void) mca_base_var_register("ompi", "group", "union", "hashsize",
+                                 "group_union opt hash table size.",
+                                 MCA_BASE_VAR_TYPE_UNSIGNED_INT, NULL, 0, 0,
+                                 OPAL_INFO_LVL_3,
+                                 MCA_BASE_VAR_SCOPE_CONSTANT,
+                                 &ompi_group_union_opt_hash_size);
 
     value = mca_base_var_find ("opal", "opal", NULL, "cuda_support");
     if (0 <= value) {
