@@ -185,7 +185,7 @@ fallback:
     UCG_DEBUG("fallback ireduce_scatter");
     return ucg_module->previous_ireduce_scatter(sbuf, rbuf, rcounts, dtype,
                                         op, comm, request,
-                                        ucg_module->previous_reduce_scatter_module);
+                                        ucg_module->previous_ireduce_scatter_module);
 }
 
 int mca_coll_ucg_ireduce_scatter_cache(const void *sbuf, void *rbuf, const int *rcounts, 
@@ -236,7 +236,7 @@ fallback:
     UCG_DEBUG("fallback ireduce_scatter");
     return ucg_module->previous_ireduce_scatter(sbuf, rbuf, rcounts, dtype,
                                         op, comm, request,
-                                        ucg_module->previous_reduce_scatter_module);
+                                        ucg_module->previous_ireduce_scatter_module);
 }
 
 
