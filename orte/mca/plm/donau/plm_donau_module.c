@@ -129,6 +129,7 @@ static int plm_donau_init(void)
         ORTE_ERROR_LOG(rc);
         return rc;
     }
+    orte_plm_globals.node_regex_threshold = INT_MAX;
     /* if we don't want to launch (e.g. someone just wants
      * to test the mappers), then we assign vpids at "launch"
      * so the mapper has something to work with
