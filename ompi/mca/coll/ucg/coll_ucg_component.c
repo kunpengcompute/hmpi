@@ -131,6 +131,13 @@ static int mca_coll_ucg_register(void)
                                           MCA_BASE_VAR_SCOPE_READONLY,
                                           &mca_coll_ucg_component.enable_coll);
 
+    (void)mca_base_component_var_register(&mca_coll_ucg_component.super.collm_version, "enable_coll_cache",
+                                          "Comma separated list of collective operations to enable cache",
+                                          MCA_BASE_VAR_TYPE_STRING, NULL, 0, 0,
+                                          OPAL_INFO_LVL_9,
+                                          MCA_BASE_VAR_SCOPE_READONLY,
+                                          &mca_coll_ucg_component.enable_coll_cache);
+
     (void)mca_base_component_var_register(&mca_coll_ucg_component.super.collm_version, "topology",
                                           "Path of the topology file required by the net-topo-aware algorithm",
                                           MCA_BASE_VAR_TYPE_STRING, NULL, 0, 0,
