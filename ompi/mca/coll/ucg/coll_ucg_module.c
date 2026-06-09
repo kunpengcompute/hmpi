@@ -31,6 +31,15 @@ mca_pml_ucx_module_t ompi_pml_ucx __attribute__((weak));
          module->super.coll_ ## _api = mca_coll_ucg_ ## _api ## _cache; \
     }
 
+#define MCA_COLL_UCG_CHECK_AND_SET_CACHE_HANDLER(_api) \
+    if (mca_coll_ucg_is_api_enable(#_api)) { \
+        if (mca_coll_ucg_component.max_rcache_size > 0 && mca_check_ucg_fun_cache_enable(#_api)) { \
+            module->super.coll_ ## _api = mca_coll_ucg_ ## _api ## _cache; \
+        } else {\
+            module->super.coll_ ## _api = mca_coll_ucg_ ## _api;\
+        } \
+    }
+
 #define MCA_COLL_UCG_SAVE_FALLBACK(_api) \
     do {\
         ucg_module->previous_ ## _api            = comm->c_coll->coll_ ## _api;\
@@ -597,59 +606,73 @@ static bool mca_coll_ucg_is_api_enable(const char *api)
     return true;
 }
 
+static bool mca_check_ucg_fun_cache_enable(char *coll_name)
+{
+    mca_coll_ucg_component_t *cm = &mca_coll_ucg_component;
+    if (cm->coll_cache_list == NULL) {
+        return false;
+    }
+    char **coll_cache_list = cm->coll_cache_list;
+    for (; *coll_cache_list != NULL; ++coll_cache_list) {
+        if (!strcmp(*coll_cache_list, coll_name)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static void mca_coll_ucg_module_construct(mca_coll_ucg_module_t *module)
 {
+    mca_coll_ucg_component_t *cm = &mca_coll_ucg_component;
+    if (cm->enable_coll_cache == NULL) {
+        UCG_DEBUG("Enable using cache %s", cm->enable_coll_cache);
+        cm->coll_cache_list = opal_argv_split(cm->enable_coll_cache, ',');
+    }
     memset((char*)module + sizeof(module->super), 0, sizeof(*module) - sizeof(module->super));
     module->super.coll_module_enable = mca_coll_ucg_module_enable;
     if (mca_coll_ucg_component.max_rcache_size > 0) {
         MCA_COLL_UCG_SET_CACHE_HANDLER(allreduce);
         MCA_COLL_UCG_SET_CACHE_HANDLER(barrier);
         MCA_COLL_UCG_SET_CACHE_HANDLER(bcast);
-        MCA_COLL_UCG_SET_CACHE_HANDLER(alltoallv);
         MCA_COLL_UCG_SET_CACHE_HANDLER(scatter);
-        MCA_COLL_UCG_SET_CACHE_HANDLER(scatterv);
         MCA_COLL_UCG_SET_CACHE_HANDLER(gather);
-        MCA_COLL_UCG_SET_CACHE_HANDLER(gatherv);
-        MCA_COLL_UCG_SET_CACHE_HANDLER(allgatherv);
         MCA_COLL_UCG_SET_CACHE_HANDLER(reduce_scatter);
         MCA_COLL_UCG_SET_CACHE_HANDLER(reduce_scatter_block);
 
         MCA_COLL_UCG_SET_CACHE_HANDLER(iallreduce);
         MCA_COLL_UCG_SET_CACHE_HANDLER(ibarrier);
         MCA_COLL_UCG_SET_CACHE_HANDLER(ibcast);
-        MCA_COLL_UCG_SET_CACHE_HANDLER(ialltoallv);
         MCA_COLL_UCG_SET_CACHE_HANDLER(iscatter);
-        MCA_COLL_UCG_SET_CACHE_HANDLER(iscatterv);
         MCA_COLL_UCG_SET_CACHE_HANDLER(igather);
-        MCA_COLL_UCG_SET_CACHE_HANDLER(igatherv);
-        MCA_COLL_UCG_SET_CACHE_HANDLER(iallgatherv);
         MCA_COLL_UCG_SET_CACHE_HANDLER(ireduce_scatter);
         MCA_COLL_UCG_SET_CACHE_HANDLER(ireduce_scatter_block);
     } else {
         MCA_COLL_UCG_SET_HANDLER(allreduce);
         MCA_COLL_UCG_SET_HANDLER(barrier);
         MCA_COLL_UCG_SET_HANDLER(bcast);
-        MCA_COLL_UCG_SET_HANDLER(alltoallv);
         MCA_COLL_UCG_SET_HANDLER(scatter);
-        MCA_COLL_UCG_SET_HANDLER(scatterv);
         MCA_COLL_UCG_SET_HANDLER(gather);
-        MCA_COLL_UCG_SET_HANDLER(gatherv);
-        MCA_COLL_UCG_SET_HANDLER(allgatherv);
         MCA_COLL_UCG_SET_HANDLER(reduce_scatter);
         MCA_COLL_UCG_SET_HANDLER(reduce_scatter_block);
 
         MCA_COLL_UCG_SET_HANDLER(iallreduce);
         MCA_COLL_UCG_SET_HANDLER(ibarrier);
         MCA_COLL_UCG_SET_HANDLER(ibcast);
-        MCA_COLL_UCG_SET_HANDLER(ialltoallv);
         MCA_COLL_UCG_SET_HANDLER(iscatter);
-        MCA_COLL_UCG_SET_HANDLER(iscatterv);
         MCA_COLL_UCG_SET_HANDLER(igather);
-        MCA_COLL_UCG_SET_HANDLER(igatherv);
-        MCA_COLL_UCG_SET_HANDLER(iallgatherv);
         MCA_COLL_UCG_SET_HANDLER(ireduce_scatter);
         MCA_COLL_UCG_SET_HANDLER(ireduce_scatter_block);
     }
+
+    MCA_COLL_UCG_CHECK_AND_SET_CACHE_HANDLER(alltoallv);
+    MCA_COLL_UCG_CHECK_AND_SET_CACHE_HANDLER(scatterv);
+    MCA_COLL_UCG_CHECK_AND_SET_CACHE_HANDLER(gatherv);
+    MCA_COLL_UCG_CHECK_AND_SET_CACHE_HANDLER(allgatherv);
+
+    MCA_COLL_UCG_CHECK_AND_SET_CACHE_HANDLER(ialltoallv);
+    MCA_COLL_UCG_CHECK_AND_SET_CACHE_HANDLER(iscatterv);
+    MCA_COLL_UCG_CHECK_AND_SET_CACHE_HANDLER(igatherv);
+    MCA_COLL_UCG_CHECK_AND_SET_CACHE_HANDLER(iallgatherv);
 
     MCA_COLL_UCG_SET_HANDLER(allreduce_init);
     MCA_COLL_UCG_SET_HANDLER(barrier_init);

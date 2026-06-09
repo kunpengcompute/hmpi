@@ -72,6 +72,7 @@ typedef struct {
     int max_rcache_size;        /* Max size of request cache */
     char *disable_coll;         /* Disabled op receiver */
     char *enable_coll;          /* Enabled op receiver */
+    char *enable_coll_cache;    /* Enabled op cache receiver */
     char *topology;             /* Topology file path */
     int npolls;                 /* test progress npolls */
     int ucg_list[UCG_COLLECTIVE_OP_SIZE];  /* Collective op list */
@@ -80,6 +81,7 @@ typedef struct {
 
     char **blacklist; /**  disabled collective operations */
     char **whitelist; /**  enabled collective operations */
+    char **coll_cache_list; /**  enabled cache for collective operations */
 } mca_coll_ucg_component_t;
 OMPI_MODULE_DECLSPEC extern mca_coll_ucg_component_t mca_coll_ucg_component;
 

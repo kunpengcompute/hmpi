@@ -73,7 +73,7 @@ module load gcc/compiler12.3.1/gccmodule
 
 - 若使用 Bisheng （编译器版本号根据实际情况调整）：
 ```
-mdoule load bisheng/compiler5.1.0.2/bishengmodule
+module load bisheng/compiler5.1.0.2/bishengmodule
 ```
 
 ### 4. 安装编译所需依赖
