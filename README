@@ -40,8 +40,10 @@ Hyper MPI（简称HMPI）是在Open MPI的基础上，结合Open UCX (Unified Co
 
 ### 1. [获取HCPKit软件包](https://www.hikunpeng.com/document/detail/zh/kunpenghpcs/instg/KunpengHPCKit_install_007.html)
 
-[https://www.hikunpeng.com/developer/hpc/hpckit-download](https://www.hikunpeng.com/developer/hpc/hpckit-download)
-
+#### 下载HPCKit软件包（HPCKit版本号根据实际情况调整）
+```
+wget https://mirrors.huaweicloud.com/kunpeng/archive/HPC/HPCKit/HPCKit_26.0.RC1_Linux-aarch64.tar.gz
+```
 ### 2. [安装HPCKit](https://www.hikunpeng.com/document/detail/zh/kunpenghpcs/instg/KunpengHPCKit_install_012.html)
 
 #### 解压 HPCKit 软件安装包（HPCKit版本号根据实际情况调整）
