@@ -624,7 +624,7 @@ static bool mca_check_ucg_fun_cache_enable(char *coll_name)
 static void mca_coll_ucg_module_construct(mca_coll_ucg_module_t *module)
 {
     mca_coll_ucg_component_t *cm = &mca_coll_ucg_component;
-    if (cm->enable_coll_cache == NULL) {
+    if (cm->enable_coll_cache != NULL) {
         UCG_DEBUG("Enable using cache %s", cm->enable_coll_cache);
         cm->coll_cache_list = opal_argv_split(cm->enable_coll_cache, ',');
     }
