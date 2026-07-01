@@ -1,0 +1,165 @@
+BasedOnStyle: LLVM
+
+# --- 缩进与行宽 ---
+IndentWidth: 4                        # 缩进4空格
+TabWidth: 4                           # Tab字符宽度4个空格
+UseTab: Never                         # 缩进时使用空格而不是Tab
+ColumnLimit: 120                      # 行宽限制120字符
+ContinuationIndentWidth: 4            # 代码换行后缩进宽度4空格
+ConstructorInitializerIndentWidth: 4  # 构造函数初始化列表换行缩进宽度4空格
+AccessModifierOffset: -4              # public/private等相对类体缩进-4，使其与class关键字对齐
+
+# --- 大括号风格 ---
+# 混合风格：函数定义大括号另起一行(Allman)，其余大括号不换行(K&R)
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterFunction: true           # 函数定义大括号另起一行
+  AfterClass: false             # 类定义大括号不换行
+  AfterControlStatement: Never  # 控制语句大括号不换行
+  AfterEnum: false              # 枚举定义大括号不换行
+  AfterNamespace: false         # 命名空间定义大括号不换行
+  AfterStruct: false            # 结构体定义大括号不换行
+  AfterUnion: false             # 联合体定义大括号不换行
+  BeforeCatch: false            # catch语句前紧跟大括号不换行
+  BeforeElse: false             # else语句前紧跟大括号不换行
+  IndentBraces: false           # 大括号不需要额外缩进
+  AfterExternBlock: false       # extern代码块定义大括号不换行
+  SplitEmptyFunction: true      # 空函数大括号允许放在同一行
+  SplitEmptyRecord: true        # 空记录体（class、struct、union）大括号允许放在同一行
+  SplitEmptyNamespace: true     # 空命名空间大括号允许放在同一行
+
+# --- 短语句风格 ---
+AllowShortBlocksOnASingleLine: Empty        # 仅空块可放在同一行
+AllowShortFunctionsOnASingleLine: Empty     # 仅空函数体可放在同一行
+AllowShortLambdasOnASingleLine: Inline      # 仅内联lambda可放在同一行
+AllowShortCaseLabelsOnASingleLine: false    # 不允许case标签及内容放在同一行
+AllowShortIfStatementsOnASingleLine: Never  # 不允许短if单行
+AllowShortLoopsOnASingleLine: false         # 不允许循环语句单行
+AllowShortEnumsOnASingleLine: false         # 不允许枚举定义单行
+
+# --- 对齐 ---
+AlignAfterOpenBracket: Align         # 参数与开括号后的第一个字符水平对齐
+AlignConsecutiveAssignments: false   # 连续多行的赋值语句不进行等号对齐
+AlignConsecutiveDeclarations: false  # 连续多行的变量或函数声明不进行对齐
+AlignEscapedNewlines: Left           # 宏定义中用于换行的反斜杠左对齐
+AlignOperands: true                  # 表达式跨行对齐
+AlignTrailingComments: true          # 行尾注释纵向对齐
+
+# --- 换行策略 ---
+AllowAllArgumentsOnNextLine: true                 # 函数调用（或带括号的初始化列表）允许将所有参数全部放到下一行
+AllowAllConstructorInitializersOnNextLine: true   # 允许构造函数的初始化参数放在下一行
+AllowAllParametersOfDeclarationOnNextLine: false  # 不允许函数形参列表放在下一行
+AlwaysBreakAfterReturnType: None                  # 函数定义的返回类型之后不强制换行
+AlwaysBreakBeforeMultilineStrings: false          # 多行字符串字面量不强制换行
+AlwaysBreakTemplateDeclarations: Yes              # 模板声明后强制换行
+BinPackArguments: true                            # 函数实参可以混合换行
+BinPackParameters: true                           # 函数形参可以混合换行
+BreakBeforeBinaryOperators: None                  # 二元运算符在代码换行时放在上一行行尾
+BreakBeforeInheritanceComma: false                # 多重继承中继承列表换行时逗号放在上一行行尾
+BreakInheritanceList: BeforeComma                 # 继承列表在逗号前换行
+BreakBeforeTernaryOperators: false                # 三元运算符在操作符后换行
+BreakConstructorInitializersBeforeComma: false    # 构造函数初始化列表换行时逗号放在上一行行尾
+BreakConstructorInitializers: BeforeColon         # 构造函数初始化列表需要换行时，在冒号前进行换行
+BreakStringLiterals: true                         # 允许对过长的字符串字面量进行自动换行截断
+
+# --- 指针与引用对齐 ---
+PointerAlignment: Right        # 指针*靠近变量名: Type *name
+DerivePointerAlignment: false  # 不自动推导对齐方式
+
+# --- Include 管理 ---
+IncludeBlocks: Preserve       # 保持include块原样，不自动重排
+SortIncludes: false           # 不自动排序include，避免破坏依赖顺序
+SortUsingDeclarations: false  # 不自动排序using声明
+IncludeCategories:
+  - Regex: '<.*\.h>'
+    Priority: 1
+  - Regex: '^<.*'
+    Priority: 2
+  - Regex: '^"rack_def\.h"'
+    Priority: 3
+  - Regex: '^"rack_.*\.h"'
+    Priority: 4
+  - Regex: '.*'
+    Priority: 5
+IncludeIsMainRegex: '([-_](test|benchmark))?$'
+
+# --- 空格风格 ---
+Cpp11BracedListStyle: true               # 花括号列表内不加多余空格
+SpaceAfterCStyleCast: false              # C语言风格强制类型转换右括号后不加多余空格
+SpaceAfterLogicalNot: false              # 逻辑非运算符后不加多余空格
+SpaceAfterTemplateKeyword: true          # template关键字后面添加一个空格
+SpaceBeforeAssignmentOperators: true     # 赋值运算符的前面添加一个空格
+SpaceBeforeCpp11BracedList: false        # C++11大括号初始化列表前不添加空格
+SpaceBeforeCtorInitializerColon: true    # 构造函数初始化列表的冒号前添加一个空格
+SpaceBeforeInheritanceColon: true        # 类继承时基类列表前的冒号前添加一个空格
+SpaceBeforeParens: ControlStatements     # 控制语句括号前加空格
+SpaceBeforeRangeBasedForLoopColon: true  # C++11基于范围的for循环中，冒号前添加一个空格
+SpaceInEmptyParentheses: false           # 空圆括号中不添加空格
+SpacesBeforeTrailingComments: 1          # 代码行尾的注释前保留1个空格
+SpacesInAngles: false                    # C++模板尖括号内部不添加空格
+SpacesInContainerLiterals: false         # 容器字面量的花括号{}或方括号[]内部不添加空格
+SpacesInCStyleCastParentheses: false     # C风格强制类型转换括号内部不添加空格
+SpacesInParentheses: false               # 普通圆括号内部不添加空格
+SpacesInSquareBrackets: false            # 方括号内部不添加空格
+
+# --- 注释与命名空间 ---
+CommentPragmas: '^ NOLINT'  # NOLINT注释不进行修改
+ReflowComments: false       # 不重排注释
+FixNamespaceComments: true  # 自动修复命名空间结束注释
+NamespaceIndentation: None  # 命名空间内不额外缩进
+CompactNamespaces: false    # 嵌套命名空间不合并到同一行
+
+# --- C++标准 ---
+Standard: c++17
+
+# --- 其他 ---
+ConstructorInitializerAllOnOneLineOrOnePerLine: true  # 构造函数初始化列表无法完全放在一行时，每一个成员变量单独放一行
+DisableFormat: false                                  # 不禁用自动格式化
+ExperimentalAutoDetectBinPacking: false               # 尽量把所有参数塞在同一行
+KeepEmptyLinesAtTheStartOfBlocks: false               # 不保留代码块起始处的空行
+MaxEmptyLinesToKeep: 1                                # 代码中最多允许保留1个连续空行
+IndentCaseLabels: true                                # case和default进行缩进
+IndentPPDirectives: None                              # C/C++ 预处理指令不进行缩进
+IndentWrappedFunctionNames: false                     # 函数名过长发生换行时，换行后的函数名不进行额外缩进
+ForEachMacros:
+  - foreach
+  - Q_FOREACH
+  - BOOST_FOREACH
+MacroBlockBegin: '[A-Z_]+_BEGIN\(.*\)$'               # 自定义代码块开始的宏
+MacroBlockEnd: '^[A-Z_]+_END\(.*\)$'                  # 自定义代码块结束的宏
+PenaltyBreakAssignment: 10                            # 赋值运算符前换行的惩罚值
+PenaltyBreakBeforeFirstCallParameter: 2               # 在函数调用的第一个参数前换行的惩罚值
+PenaltyBreakComment: 300                              # 注释换行的惩罚值
+PenaltyBreakFirstLessLess: 120                        # 流操作符前换行的惩罚值
+PenaltyBreakString: 1000                              # 字符串换行的惩罚值
+PenaltyBreakTemplateDeclaration: 10                   # 模板声明换行的惩罚值
+PenaltyExcessCharacter: 1000000                       # 超出每行字符数限制的惩罚值
+PenaltyReturnTypeOnItsOwnLine: 120                    # 将函数的返回类型单独放一行的惩罚值
+RawStringFormats:
+  - Language: Cpp
+    Delimiters:
+      - cc
+      - CC
+      - cpp
+      - Cpp
+      - CPP
+      - 'c++'
+      - 'C++'
+    CanonicalDelimiter: ''
+    BasedOnStyle: google
+  - Language: TextProto
+    Delimiters:
+      - pb
+      - PB
+      - proto
+      - PROTO
+    EnclosingFunctions:
+      - EqualsProto
+      - EquivToProto
+      - PARSE_PARTIAL_TEXT_PROTO
+      - PARSE_TEST_PROTO
+      - PARSE_TEXT_PROTO
+      - ParseTextOrDie
+      - ParseTextProtoOrDie
+    CanonicalDelimiter: ''
+    BasedOnStyle: google
