@@ -38,7 +38,7 @@ Hyper MPI在集合通信模式中，不管是大包数据，还是小包数据�
 
 -   高性能优化
 
-    Hyper MPI针对Allreduce、Bcast、Barrier、Alltoallv、Allgatherv、Gatherv、Gather、Scatterv、reduce\_scatter和reduce\_scatter\_block集合通信函数实现基于拓扑感知的算法优化（包括非阻塞接口），并支持集合通信异步硬件卸载。Hyper MPI相较于开源OpenMPI，集合通信性能有较高提升。
+    Hyper MPI针对Allreduce、Bcast、Barrier、Alltoallv、Allgatherv、Gatherv、Gather、Scatterv、reduce_scatter和reduce_scatter_block集合通信函数实现基于拓扑感知的算法优化（包括非阻塞接口），并支持集合通信异步硬件卸载。Hyper MPI相较于开源OpenMPI，集合通信性能有较高提升。
 
 -   构筑自由生态
 
@@ -102,11 +102,11 @@ Hyper MPI的软件架构中各模块说明如[表1](#_d1e365)所示。
 
 ### 关键特性<a name="ZH-CN_TOPIC_0000002533333063"></a>
 
-Hyper MPI针对Allreduce、Bcast、Barrier、Alltoallv、Allgatherv、Gatherv、Gather、Scatterv、reduce\_scatter和reduce\_scatter\_block的阻塞与非阻塞接口这七种集合操作，进行了算法和拓扑感知层面的优化，达到特定集合通信小包情形下的极致性能。相较于其他MPI，Hyper MPI具有以下关键特性：
+Hyper MPI针对Allreduce、Bcast、Barrier、Alltoallv、Allgatherv、Gatherv、Gather、Scatterv、reduce_scatter和reduce_scatter_block的阻塞与非阻塞接口这七种集合操作，进行了算法和拓扑感知层面的优化，达到特定集合通信小包情形下的极致性能。相较于其他MPI，Hyper MPI具有以下关键特性：
 
 -   新增UCG模块
 
-    Hyper MPI除了包含Open MPI的所有特性之外，增加了集合通信模块（UCG），该模块中含有大量自研集合通信算法，大幅度提升Allreduce、Bcast、Barrier、Alltoallv、Allgatherv、Gatherv、Gather、Scatterv、reduce\_scatter和reduce\_scatter\_block的阻塞与非阻塞接口等集合通信函数的性能。该模块还包含部分集合通信接口的硬件卸载算法，大幅提升计算、通信交叠率。
+    Hyper MPI除了包含Open MPI的所有特性之外，增加了集合通信模块（UCG），该模块中含有大量自研集合通信算法，大幅度提升Allreduce、Bcast、Barrier、Alltoallv、Allgatherv、Gatherv、Gather、Scatterv、reduce_scatter和reduce_scatter_block的阻塞与非阻塞接口等集合通信函数的性能。该模块还包含部分集合通信接口的硬件卸载算法，大幅提升计算、通信交叠率。
 
 -   新增KuComm组件
 
@@ -116,7 +116,7 @@ Hyper MPI针对Allreduce、Bcast、Barrier、Alltoallv、Allgatherv、Gatherv、
 
     Hyper MPI在hmpi层新增FP16半精度数据类型支持，支持AI4S场景基础加速库的开发。
 
-    在mpi扩展模块中新增c/c++语言的半精度数据类型：MPIX\_SHORT\_FLOAT、MPIX\_C\_SHORT\_FLOAT\_COMPLEX、MPIX\_CXX\_SHORT\_FLOAT\_COMPLEX类型，使用时需要引入<mpi-ext.h\>头文件。当前HPCKit中的编译器不支持Fortran的半精度类型real2和complex4，因此hmpi内部也暂不使能Fortran的半精度特性。
+    在mpi扩展模块中新增c/c++语言的半精度数据类型：MPIX_SHORT_FLOAT、MPIX_C_SHORT_FLOAT_COMPLEX、MPIX_CXX_SHORT_FLOAT_COMPLEX类型，使用时需要引入<mpi-ext.h>头文件。当前HPCKit中的编译器不支持Fortran的半精度类型real2和complex4，因此hmpi内部也暂不使能Fortran的半精度特性。
 
 -   支持鲲鹏环境
 
@@ -155,34 +155,34 @@ Hyper MPI支持的集合操作包含Allreduce、Bcast、Barrier、Alltoallv、Al
 
 指定算法模式的示例如下：
 
-**mpirun -np** _16_ **-N** _2_ **--hostfile** _hf_ **--mca coll ^ucg** _test\_case_
+**mpirun -np** _16_ **-N** _2_ **--hostfile** _hf_ **--mca coll ^ucg** _test_case_
 
 >![](public_sys-resources/icon-note.gif) **说明：** 
->-   -np：表示所有节点总进程数，计算方式为单节点的进程数量（N）\*节点数量。
+>-   -np：表示所有节点总进程数，计算方式为单节点的进程数量（N）*节点数量。
 >-   -N：表示每个节点的进程数。
 >-   --hostfile：表示进程运行节点的配置文件。
->-   test\_case：表示mpicc编译后的二进制文件。
+>-   test_case：表示mpicc编译后的二进制文件。
 
 Hyper MPI默认对业务进程按照core的策略进行绑核，如果业务进程为多线程程序，为保障线程的正常调度，需要根据业务线程规模手动修改绑核配置，例如：
 
 -   可以通过指定rankfile文件的方式实现细粒度绑核，rankfile文件的编写规则为：
 
-    **rank** _0_=\{_ip1_\}  **slot=**_0_-_7_
+    **rank** _0_={_ip1_}  **slot=**_0_-_7_
 
-    **rank** _1_=\{_ip2_\}  **slot=**_0_-_7_
+    **rank** _1_={_ip2_}  **slot=**_0_-_7_
 
     上述规则表示将MPI的0号任务绑定在ip1节点的0-7号CPU核上；将MPI的1号任务绑定在ip2节点的0-7号CPU核上。
 
     运行命令示例如下：
 
-    **mpirun --rankfile** _rf_ _test\_case_
+    **mpirun --rankfile** _rf_ _test_case_
 
 >![](public_sys-resources/icon-note.gif) **说明：** 
 >--rankfile配置项无法与--hostfile或-N选项同时使用。
 
 -   可以通过配置**--bind-to core**或**--bind-to** **numa**或**--bind-to** **socket**实现粗粒度绑核。运行命令示例如下：
 
-    **mpirun -np** _2_ **-N** _1_ **--hostfile** _hf_ **--bind-to** _numa_ _test\_case_
+    **mpirun -np** _2_ **-N** _1_ **--hostfile** _hf_ **--bind-to** _numa_ _test_case_
 
 **通过默认算法运行MPI作业<a name="title5685mcpsimp"></a>**
 
@@ -194,26 +194,26 @@ Hyper MPI在默认情况下根据包长、每个节点的进程数（PPN）和�
 
 运行命令示例如下：
 
-**mpirun -np** _16_ **-N** _2_ **--hostfile** _hf_ **test\_case**
+**mpirun -np** _16_ **-N** _2_ **--hostfile** _hf_ **test_case**
 
 >![](public_sys-resources/icon-note.gif) **说明：** 
 >Hyper MPI中并非每一个算法都支持所有的场景，在一些不支持场景下，会回退至支持的算法，详情请参见[特性支持与功能回退说明](#ZH-CN_TOPIC_0000002501533072)。
 
 **通过指定算法运行MPI作业<a name="title5707mcpsimp"></a>**
 
-以Allreduce的算法参数**UCG\_PLANC\_UCX\_**_ALLREDUCE_**\_ATTR**为例进行介绍。通过指定算法运行MPI作业的命令参数请参见[指定算法支持的命令参数](#section12907174313112)。
+以Allreduce的算法参数**UCG_PLANC_UCX_**_ALLREDUCE_**_ATTR**为例进行介绍。通过指定算法运行MPI作业的命令参数请参见[指定算法支持的命令参数](#section12907174313112)。
 
 -   方法一：通过命令行参数指定算法
-    1.  使用PuTTY工具，以Hyper MPI普通用户（例如“hmpi\_user”）登录至作业执行节点。
+    1.  使用PuTTY工具，以Hyper MPI普通用户（例如“hmpi_user”）登录至作业执行节点。
     2.  在**mpirun**命令中增加如下参数。
 
-        **-x UCG\_PLANC\_UCX\_**_ALLREDUCE_**\_ATTR=I:**_id_\[**S:**_score_**R:**_start_-_end_\]
+        **-x UCG_PLANC_UCX_**_ALLREDUCE_**_ATTR=I:**_id_[**S:**_score_**R:**_start_-_end_]
 
 -   方法二：通过设置环境变量的方式来选择对应的算法
-    1.  使用PuTTY工具，以Hyper MPI普通用户（例如“hmpi\_user”）登录至作业执行节点。
-    2.  将以下命令写入所有节点的“\~/.bashrc”中。
+    1.  使用PuTTY工具，以Hyper MPI普通用户（例如“hmpi_user”）登录至作业执行节点。
+    2.  将以下命令写入所有节点的“~/.bashrc”中。
 
-        **export UCG\_PLANC\_UCX\_**_ALLREDUCE_**\_ATTR=I:**_id_\[**S:**_score_**R:**_start_-_end_\]
+        **export UCG_PLANC_UCX_**_ALLREDUCE_**_ATTR=I:**_id_[**S:**_score_**R:**_start_-_end_]
 
         >![](public_sys-resources/icon-note.gif) **说明：** 
         >-   id：表示对应算法的序号。对应算法的序号请参见[算法地图](#ZH-CN_TOPIC_0000002501373246)。如果算法选择的数值不在有效范围内，则会执行默认算法。
@@ -222,15 +222,15 @@ Hyper MPI在默认情况下根据包长、每个节点的进程数（PPN）和�
 
     3.  执行以下命令，使环境变量生效。
 
-        **source \~/.bashrc**
+        **source ~/.bashrc**
 
     4.  不再需要该环境变量时，需执行以下操作。
 
-        删除“\~/.bashrc”中已写入的“**export UCG\_PLANC\_UCX\_**_ALLREDUCE_**\_ATTR=I:**_id_\[**S:**_score_**R:**_start_-_end_\]”命令。
+        删除“~/.bashrc”中已写入的“**export UCG_PLANC_UCX_**_ALLREDUCE_**_ATTR=I:**_id_[**S:**_score_**R:**_start_-_end_]”命令。
 
         执行以下命令，删除已生效的环境变量。
 
-        **unset UCG\_PLANC\_UCX\_**_ALLREDUCE_**\_ATTR**
+        **unset UCG_PLANC_UCX_**_ALLREDUCE_**_ATTR**
 
 **指定算法支持的命令参数<a name="section12907174313112"></a>**
 
@@ -297,47 +297,47 @@ Hyper MPI在默认情况下根据包长、每个节点的进程数（PPN）和�
 
     **--map-by-socket --rank-by-core**
 
--   在选用算法5、6时，节点内采用了K-nomial算法，可通过调节K-nomial tree结构的K值参数值，寻找最优参数值，从而获得最佳性能。K值范围为\(0,进程数\]。示例命令如下：
+-   在选用算法5、6时，节点内采用了K-nomial算法，可通过调节K-nomial tree结构的K值参数值，寻找最优参数值，从而获得最佳性能。K值范围为(0,进程数]。示例命令如下：
 
-    **-x UCG\_PLANC\_UCX\_ALLREDUCE\_FANOUT\_INTRA\_DEGREE=**_3_
+    **-x UCG_PLANC_UCX_ALLREDUCE_FANOUT_INTRA_DEGREE=**_3_
 
-    **-x UCG\_PLANC\_UCX\_ALLREDUCE\_FANIN\_INTRA\_DEGREE=**_8_
+    **-x UCG_PLANC_UCX_ALLREDUCE_FANIN_INTRA_DEGREE=**_8_
 
--   在选用算法7、8时，节点内与节点间都采用了K-nomial算法，可通过调节K-nomial tree结构的K值参数值，寻找最优参数值，从而获得最佳性能。K值范围为\(0,进程数\]。示例命令如下：
+-   在选用算法7、8时，节点内与节点间都采用了K-nomial算法，可通过调节K-nomial tree结构的K值参数值，寻找最优参数值，从而获得最佳性能。K值范围为(0,进程数]。示例命令如下：
 
-    **-x UCG\_PLANC\_UCX\_ALLREDUCE\_FANOUT\_INTER\_DEGREE=**_7_ **-x UCG\_PLANC\_UCX\_ALLREDUCE\_FANIN\_INTER\_DEGREE=**_7_ **-x UCG\_PLANC\_UCX\_ALLREDUCE\_FANOUT\_INTRA\_DEGREE=**_3_ **-x UCG\_PLANC\_UCX\_ALLREDUCE\_FANIN\_INTRA\_DEGREE=**_8_
+    **-x UCG_PLANC_UCX_ALLREDUCE_FANOUT_INTER_DEGREE=**_7_ **-x UCG_PLANC_UCX_ALLREDUCE_FANIN_INTER_DEGREE=**_7_ **-x UCG_PLANC_UCX_ALLREDUCE_FANOUT_INTRA_DEGREE=**_3_ **-x UCG_PLANC_UCX_ALLREDUCE_FANIN_INTRA_DEGREE=**_8_
 
 为提高性能，也可加入以下选项，调整传输模式：
 
-**-x UCX\_TLS=sm,rc\_x**
+**-x UCX_TLS=sm,rc_x**
 
-综上，在调用MPI\_Allreduce和MPI\_Iallreduce时运行命令示例如下（鲲鹏芯片）：
+综上，在调用MPI_Allreduce和MPI_Iallreduce时运行命令示例如下（鲲鹏芯片）：
 
-**mpirun -np** _16_ **-N** _2_ **--hostfile hf8 -x UCX\_TLS=sm,rc\_x -x UCG\_PLANC\_UCX\_ALLREDUCE\_ATTR=I:**_n_**S:**_200_**R:0- test\_case**
+**mpirun -np** _16_ **-N** _2_ **--hostfile hf8 -x UCX_TLS=sm,rc_x -x UCG_PLANC_UCX_ALLREDUCE_ATTR=I:**_n_**S:**_200_**R:0- test_case**
 
 **关于Bcast指定算法的说明<a name="title4290mcpsimp"></a>**
 
--   在选用算法3时，节点间采用了K-nomial算法，可通过调节K值参数值，寻找最优参数值，从而获得最佳性能。K值范围为\(0,进程数\]。命令示例如下：
+-   在选用算法3时，节点间采用了K-nomial算法，可通过调节K值参数值，寻找最优参数值，从而获得最佳性能。K值范围为(0,进程数]。命令示例如下：
 
-    **-x UCG\_PLANC\_UCX\_BCAST\_NA\_KNTREE\_INTER\_DEGREE=**_7_
+    **-x UCG_PLANC_UCX_BCAST_NA_KNTREE_INTER_DEGREE=**_7_
 
--   在选用算法4时，节点内与节点间都采用了K-nomial算法，可通过调节K值参数值，寻找最优参数值，从而获得最佳性能。K值范围为\(0,进程数\]。命令示例如下：
+-   在选用算法4时，节点内与节点间都采用了K-nomial算法，可通过调节K值参数值，寻找最优参数值，从而获得最佳性能。K值范围为(0,进程数]。命令示例如下：
 
-    **-x UCG\_PLANC\_UCX\_BCAST\_NA\_KNTREE\_INTER\_DEGREE=**_7_
+    **-x UCG_PLANC_UCX_BCAST_NA_KNTREE_INTER_DEGREE=**_7_
 
-    **-x UCG\_PLANC\_UCX\_BCAST\_NA\_KNTREE\_INTRA\_DEGREE=**_3_
+    **-x UCG_PLANC_UCX_BCAST_NA_KNTREE_INTRA_DEGREE=**_3_
 
 -   在选用算法9时，可通过以下参数值调整ESBT算法中划分的块数，寻找最优参数值，从而获得最佳性能。默认值为0，表示auto。命令示例如下：
 
-    **-x UCG\_PLANC\_UCX\_BCAST\_ESBT\_BLOCKS=**_3_
+    **-x UCG_PLANC_UCX_BCAST_ESBT_BLOCKS=**_3_
 
     为提高性能，也可加入以下选项（共享内存Shared Memory和基于任意传输的可靠连接），调整传输模式：
 
-**-x UCX\_TLS=sm,rc\_x**
+**-x UCX_TLS=sm,rc_x**
 
-综上，在调用MPI\_Bcast和MPI\_Ibcast时运行命令示例如下（鲲鹏芯片）：
+综上，在调用MPI_Bcast和MPI_Ibcast时运行命令示例如下（鲲鹏芯片）：
 
-**mpirun -np** _16_ **-N** _2_ **--hostfile hf8 -x UCX\_TLS=sm,rc\_x -x UCG\_PLANC\_UCX\_BCAST\_ATTR=I:**_n_**S:**_200_**R:0- test\_case**
+**mpirun -np** _16_ **-N** _2_ **--hostfile hf8 -x UCX_TLS=sm,rc_x -x UCG_PLANC_UCX_BCAST_ATTR=I:**_n_**S:**_200_**R:0- test_case**
 
 **关于Barrier指定算法的说明<a name="title4322mcpsimp"></a>**
 
@@ -347,37 +347,37 @@ Hyper MPI在默认情况下根据包长、每个节点的进程数（PPN）和�
 
 在选用算法1时，可通过调整以下参数值，调整每次的通信请求次数，请根据实际情况替换。命令示例如下：
 
-**-x UCG\_PLANC\_UCX\_ALLTOALLV\_LADD\_THROTTLED\_FACTOR**=_2_
+**-x UCG_PLANC_UCX_ALLTOALLV_LADD_THROTTLED_FACTOR**=_2_
 
 在选用算法5时，需要开启以下参数使能共享内存。命令示例如下：
 
-**-x UCG\_USE\_SHM\_POOL=**y
+**-x UCG_USE_SHM_POOL=**y
 
 为提高性能，也可加入以下选项，调整传输模式：
 
-**-x UCX\_TLS=sm,rc\_x**
+**-x UCX_TLS=sm,rc_x**
 
-综上，在调用MPI\_Alltoallv和MPI\_Ialltoallv时运行命令示例如下（鲲鹏芯片）：
+综上，在调用MPI_Alltoallv和MPI_Ialltoallv时运行命令示例如下（鲲鹏芯片）：
 
-**mpirun -np** _16_ **-N** _2_ **--hostfile hf8 -x UCX\_TLS=sm,rc\_x -x UCG\_PLANC\_UCX\_ALLTOALLV\_ATTR=I:**_n_**S**:_200_**R:0- test\_case**
+**mpirun -np** _16_ **-N** _2_ **--hostfile hf8 -x UCX_TLS=sm,rc_x -x UCG_PLANC_UCX_ALLTOALLV_ATTR=I:**_n_**S**:_200_**R:0- test_case**
 
 **关于Scatterv指定算法的说明<a name="title4350mcpsimp"></a>**
 
 -   在选用算法1时，可通过调整以下参数值，寻找最优参数值，从而获得最佳性能。命令示例如下：
 
-    **-x UCG\_PLANC\_UCX\_SCATTERV\_MIN\_SEND\_BATCH=**_7_
+    **-x UCG_PLANC_UCX_SCATTERV_MIN_SEND_BATCH=**_7_
 
-    **-x UCG\_PLANC\_UCX\_SCATTERV\_MAX\_SEND\_BATCH**=_8_
+    **-x UCG_PLANC_UCX_SCATTERV_MAX_SEND_BATCH**=_8_
 
 -   在选用算法2时，采用了K-nomial算法，可通过调整K值参数值，寻找最优参数值，从而获得最佳性能。命令示例如下：
 
-    **-x UCG\_PLANC\_UCX\_SCATTERV\_KNTREE\_DEGREE=**_3_
+    **-x UCG_PLANC_UCX_SCATTERV_KNTREE_DEGREE=**_3_
 
 -   在选用算法3时，采用了Node-aware K-nomial tree算法，由于节点间和节点内通信都采用了K-nomial算法，可通过调整节点间和节点内通信的K值参数值，寻找最优参数值，从而获得最佳性能。命令示例如下：
 
-    **-x UCG\_PLANC\_UCX\_SCATTERV\_NA\_KNTREE\_INTER\_DEGREE=**_4_
+    **-x UCG_PLANC_UCX_SCATTERV_NA_KNTREE_INTER_DEGREE=**_4_
 
-    **-x UCG\_PLANC\_UCX\_SCATTERV\_NA\_KNTREE\_INTRA\_DEGREE=**_3_
+    **-x UCG_PLANC_UCX_SCATTERV_NA_KNTREE_INTRA_DEGREE=**_3_
 
 >![](public_sys-resources/icon-note.gif) **说明：** 
 >-   Scatterv操作的算法3在数据量较小的场景下性能较优，数据量大的场景下性能较差。
@@ -385,51 +385,51 @@ Hyper MPI在默认情况下根据包长、每个节点的进程数（PPN）和�
 
 为提高性能，也可加入以下选项，调整传输模式：
 
-**-x UCX\_TLS=sm,rc\_x**
+**-x UCX_TLS=sm,rc_x**
 
-综上，在调用MPI\_Scatterv和MPI\_Iscatterv时运行命令示例如下（鲲鹏芯片）：
+综上，在调用MPI_Scatterv和MPI_Iscatterv时运行命令示例如下（鲲鹏芯片）：
 
-**mpirun -np** _16_ **-N** _2_ **--hostfile hf8 -x UCX\_TLS=sm,rc\_x -x UCG\_PLANC\_UCX\_SCATTERV\_ATTR=I:**_n_**S:**_200_**R:0- test\_case**
+**mpirun -np** _16_ **-N** _2_ **--hostfile hf8 -x UCX_TLS=sm,rc_x -x UCG_PLANC_UCX_SCATTERV_ATTR=I:**_n_**S:**_200_**R:0- test_case**
 
 **关于Allgatherv指定算法的说明<a name="title4391mcpsimp"></a>**
 
 为提高性能，可加入以下选项，调整传输模式：
 
-**-x UCX\_TLS=sm,rc\_x**
+**-x UCX_TLS=sm,rc_x**
 
-综上，在调用MPI\_Allgatherv和MPI\_Iallgatherv时运行命令示例如下（鲲鹏芯片）：
+综上，在调用MPI_Allgatherv和MPI_Iallgatherv时运行命令示例如下（鲲鹏芯片）：
 
-**mpirun -np** _16_ **-N** _2_ **--hostfile hf8 -x UCX\_TLS=sm,rc\_x -x UCG\_PLANC\_UCX\_ALLGATHERV\_ATTR=I:**_n_**S:**_200_**R:0- test\_case**
+**mpirun -np** _16_ **-N** _2_ **--hostfile hf8 -x UCX_TLS=sm,rc_x -x UCG_PLANC_UCX_ALLGATHERV_ATTR=I:**_n_**S:**_200_**R:0- test_case**
 
 **关于Gather指定算法的说明<a name="section7368015105810"></a>**
 
 -   在选用算法3时，采用了K-nomial算法，可通过调整K值参数值，寻找最优参数值，从而获得最佳性能。命令示例如下：
 
-    **-x UCG\_PLANC\_UCX\_GATHER\_KNTREE\_DEGREE=**_3_
+    **-x UCG_PLANC_UCX_GATHER_KNTREE_DEGREE=**_3_
 
 -   在选用算法4时，采用了Node-aware K-nomial tree算法，由于节点间和节点内通信都采用了K-nomial算法，可通过调整节点间和节点内通信的K值参数值，寻找最优参数值，从而获得最佳性能。命令示例如下：
 
-    **-x UCG\_PLANC\_UCX\_GATHER\_NA\_KNTREE\_INTER\_DEGREE=**_4_
+    **-x UCG_PLANC_UCX_GATHER_NA_KNTREE_INTER_DEGREE=**_4_
 
-    **-x UCG\_PLANC\_UCX\_GATHER\_NA\_KNTREE\_INTRA\_DEGREE=**_3_
+    **-x UCG_PLANC_UCX_GATHER_NA_KNTREE_INTRA_DEGREE=**_3_
 
 **关于Gatherv指定算法的说明<a name="title4407mcpsimp"></a>**
 
 -   在选用算法3时，采用了K-nomial算法，可通过调整K值参数值，寻找最优参数值，从而获得最佳性能。命令示例如下：
 
-    **-x UCG\_PLANC\_UCX\_GATHERV\_KNTREE\_DEGREE=**_3_
+    **-x UCG_PLANC_UCX_GATHERV_KNTREE_DEGREE=**_3_
 
 -   在选用算法4时，采用了Node-aware K-nomial tree算法，由于节点间和节点内通信都采用了K-nomial算法，可通过调整节点间和节点内通信的K值参数值，寻找最优参数值，从而获得最佳性能。命令示例如下：
 
-    **-x UCG\_PLANC\_UCX\_GATHERV\_NA\_KNTREE\_INTER\_DEGREE=**_4_
+    **-x UCG_PLANC_UCX_GATHERV_NA_KNTREE_INTER_DEGREE=**_4_
 
-    **-x UCG\_PLANC\_UCX\_GATHERV\_NA\_KNTREE\_INTRA\_DEGREE=**_3_
+    **-x UCG_PLANC_UCX_GATHERV_NA_KNTREE_INTRA_DEGREE=**_3_
 
 #### 推荐命令<a name="ZH-CN_TOPIC_0000002533293119"></a>
 
 在调用Hyper MPI运行应用时，可能会同时调用Allreduce、Bcast、Barrier、Alltoallv、Allgatherv、Gatherv和Scatterv操作，此时的推荐算法命令示例如下（鲲鹏芯片）：
 
-**mpirun -np** _16_ **-N** _2_ **--hostfile hf --map-by socket --rank-by core --bind-to core -x UCX\_TLS=sm,rc\_x -x UCG\_PLANC\_UCX\_BCAST\_ATTR=I:**_3_ **-x UCG\_PLANC\_UCX\_ALLREDUCE\_ATTR=I:**_6_ **-x UCG\_PLANC\_UCX\_BARRIER\_ATTR=I:**_5_**S:**_200_**R:**_0_ **-x UCG\_PLANC\_UCX\_ALLGATHERV\_ATTR=I:**_5_**S:**_200_**R:**_0_ **-x UCG\_PLANC\_UCX\_GATHERV\_ATTR=I:**_2_ **-x UCG\_PLANC\_UCX\_SCATTERV\_ATTR=I:**_1_ **-x UCG\_PLANC\_UCX\_ALLTOALLV\_ATTR=I:**_1_ **test\_case**
+**mpirun -np** _16_ **-N** _2_ **--hostfile hf --map-by socket --rank-by core --bind-to core -x UCX_TLS=sm,rc_x -x UCG_PLANC_UCX_BCAST_ATTR=I:**_3_ **-x UCG_PLANC_UCX_ALLREDUCE_ATTR=I:**_6_ **-x UCG_PLANC_UCX_BARRIER_ATTR=I:**_5_**S:**_200_**R:**_0_ **-x UCG_PLANC_UCX_ALLGATHERV_ATTR=I:**_5_**S:**_200_**R:**_0_ **-x UCG_PLANC_UCX_GATHERV_ATTR=I:**_2_ **-x UCG_PLANC_UCX_SCATTERV_ATTR=I:**_1_ **-x UCG_PLANC_UCX_ALLTOALLV_ATTR=I:**_1_ **test_case**
 
 #### 特性支持与功能回退说明<a name="ZH-CN_TOPIC_0000002501533072"></a>
 
@@ -449,7 +449,7 @@ PPS：Processes Per Socket，每CPU插槽进程数。
 
 **场景三：非对易操作<a name="title6367mcpsimp"></a>**
 
-MPI标准支持用户在Allreduce内进行自定义数学操作，即不局限于求和（MPI\_SUM）、乘积（MPI\_PROD）等MPI内置的数学操作；用户在自定义数学操作时会出现操作本身不对易的情况，如矩阵乘法。Allreduce算法1支持此类操作。
+MPI标准支持用户在Allreduce内进行自定义数学操作，即不局限于求和（MPI_SUM）、乘积（MPI_PROD）等MPI内置的数学操作；用户在自定义数学操作时会出现操作本身不对易的情况，如矩阵乘法。Allreduce算法1支持此类操作。
 
 当用户指定算法不是算法1时，Hyper MPI会根据数据包大小回退成算法1（中小包）。
 
@@ -493,21 +493,21 @@ MPI标准支持用户在Allreduce内进行自定义数学操作，即不局限�
 
 当节点数为1时，Hyper MPI中Alltoallv算法2、Allgatherv算法6和Scatterv算法3不支持此场景，将自动回退至支持的算法。
 
-**场景十三：sendbuf为MPI\_IN\_PLACE<a name="title6400mcpsimp"></a>**
+**场景十三：sendbuf为MPI_IN_PLACE<a name="title6400mcpsimp"></a>**
 
-当sendbuf为MPI\_IN\_PLACE时，Hyper MPI中Alltoallv所有算法和Scatterv算法3不支持此场景，回退到Open MPI。
+当sendbuf为MPI_IN_PLACE时，Hyper MPI中Alltoallv所有算法和Scatterv算法3不支持此场景，回退到Open MPI。
 
 **场景十四：Alltoallv集合操作send或recv total size超过2^32 - 1<a name="title6403mcpsimp"></a>**
 
-此场景下，Hyper MPI中Alltoallv算法2（node-aware plummer）由于是运行时数据，无法在回退时给出判断，会在运行时报错，并给出提示“Alltoallv node-aware plummer don't support datasize \>= 2^32 bytes”。
+此场景下，Hyper MPI中Alltoallv算法2（node-aware plummer）由于是运行时数据，无法在回退时给出判断，会在运行时报错，并给出提示“Alltoallv node-aware plummer don't support datasize >= 2^32 bytes”。
 
 **场景十五：Alltoallv集合操作节点内所有进程sendcounts总和超过2^31<a name="section157041038112412"></a>**
 
-此场景下，Hyper MPI中Alltoallv算法2（node-aware plummer）由于是运行时数据，无法在回退时给出判断，会在运行时报错，并给出提示“Alltoallv node-aware plummer gatherv phase don't support displs \>= 2^31 bytes”，sendcounts总和计算公式如下：
+此场景下，Hyper MPI中Alltoallv算法2（node-aware plummer）由于是运行时数据，无法在回退时给出判断，会在运行时报错，并给出提示“Alltoallv node-aware plummer gatherv phase don't support displs >= 2^31 bytes”，sendcounts总和计算公式如下：
 
 ![](figures/zh-cn_image_0000002501533104.png)
 
-其中，p为总进程数；ppn为每节点进程数；sendcounts\[i\]为节点内第i个进程的sendcounts数组。
+其中，p为总进程数；ppn为每节点进程数；sendcounts[i]为节点内第i个进程的sendcounts数组。
 
 **场景十六：Alltoallv集合操作各进程sendcounts和recvcounts大小不一致<a name="title6411mcpsimp"></a>**
 
@@ -521,9 +521,9 @@ MPI标准支持用户在Allreduce内进行自定义数学操作，即不局限�
 
 当进程数小于4时，Bcast卸载算法2不支持此场景，将自动回退至支持的算法。
 
-**场景十九：Alltoallv plummer-opt算法没开启USE\_SHM\_POOL特性<a name="section33801938165614"></a>**
+**场景十九：Alltoallv plummer-opt算法没开启USE_SHM_POOL特性<a name="section33801938165614"></a>**
 
-当指定plummer-opt算法时，未设置UCG\_USE\_SHM\_POOL为y，将自动回退至支持的算法。
+当指定plummer-opt算法时，未设置UCG_USE_SHM_POOL为y，将自动回退至支持的算法。
 
 ### KuComm使用说明<a name="ZH-CN_TOPIC_0000002501373220"></a>
 
@@ -533,7 +533,7 @@ Hyper MPI在HMPI层集合通信coll框架下新增KuComm分层拓扑组件，提
 
 **组件使能方式<a name="title2670mcpsimp"></a>**
 
-通过在mpirun命令中添加 --mca coll\_kucomm\_priority 100 将KuComm组件的优先级设为100（高于其他所有集合通信组件的默认优先级），即可使能KuComm组件。
+通过在mpirun命令中添加 --mca coll_kucomm_priority 100 将KuComm组件的优先级设为100（高于其他所有集合通信组件的默认优先级），即可使能KuComm组件。
 
 **命令示例<a name="title2673mcpsimp"></a>**
 
@@ -541,11 +541,11 @@ Hyper MPI在HMPI层集合通信coll框架下新增KuComm分层拓扑组件，提
 
 -   使能KuComm前：
 
-    mpirun -np 16 -N 4 --hostfile hf4 -x UCX\_TLS=sm,rc osu\_bcast
+    mpirun -np 16 -N 4 --hostfile hf4 -x UCX_TLS=sm,rc osu_bcast
 
 -   使能KuComm后：
 
-    mpirun  -np 16 -N 4 --hostfile hf4 -x UCX\_TLS=sm,rc  **--mca coll\_kucomm\_priority 100**  osu\_bcast
+    mpirun  -np 16 -N 4 --hostfile hf4 -x UCX_TLS=sm,rc  **--mca coll_kucomm_priority 100**  osu_bcast
 
 **特性支持与回退条件<a name="title2682mcpsimp"></a>**
 
@@ -580,7 +580,7 @@ Hyper MPI在HMPI层集合通信coll框架下新增KuComm分层拓扑组件，提
 
 执行以下命令，可查看网络设备及支持的传输模式。
 
-**ucx\_info -d**
+**ucx_info -d**
 
 回显示例：
 
@@ -591,19 +591,19 @@ Hyper MPI在HMPI层集合通信coll框架下新增KuComm分层拓扑组件，提
 
 其中，Device表示当前网络设备，Transport表示当前网络设备支持的传输模式，可存在多个支持的传输模式。
 
-启动MPI作业时，可通过“-x UCX\_TLS”参数设置MPI使用的传输模式。目前常用的参数有ud、rc、shm、mm、rc\_x、ud\_x、dc\_x等。其中shm和mm二选一，ud、rc、rc\_x、ud\_x、dc\_x可以选一个或多个。不设置时默认等同于-x UCX\_TLS=all，表示使用当前网络设备支持的所有传输模式。
+启动MPI作业时，可通过“-x UCX_TLS”参数设置MPI使用的传输模式。目前常用的参数有ud、rc、shm、mm、rc_x、ud_x、dc_x等。其中shm和mm二选一，ud、rc、rc_x、ud_x、dc_x可以选一个或多个。不设置时默认等同于-x UCX_TLS=all，表示使用当前网络设备支持的所有传输模式。
 
 更多的传输模式以及含义可参见：[https://github.com/openucx/ucx/wiki/UCX-environment-parameters](https://github.com/openucx/ucx/wiki/UCX-environment-parameters)。
 
 由于默认的参数在不指定场景时会出现不是最优的情况，为达到性能最优，可尝试如下参数组合：
 
--x UCX\_TLS=shm,rc\_x,ud\_x
+-x UCX_TLS=shm,rc_x,ud_x
 
--x UCX\_TLS=shm,ud\_x
+-x UCX_TLS=shm,ud_x
 
--x UCX\_TLS=shm,dc\_x
+-x UCX_TLS=shm,dc_x
 
-建议：Mellanox网卡环境使用ud\_x与shm组合传输模式，鲲鹏RoCE网卡环境使用ud和shm组合的传输模式，原因是ud模式下创建QP的数量远低于rc模式且通信速率较快，鲲鹏RoCE网卡环境不支持ud\_x模式。
+建议：Mellanox网卡环境使用ud_x与shm组合传输模式，鲲鹏RoCE网卡环境使用ud和shm组合的传输模式，原因是ud模式下创建QP的数量远低于rc模式且通信速率较快，鲲鹏RoCE网卡环境不支持ud_x模式。
 
 #### 进程分布<a name="ZH-CN_TOPIC_0000002501533074"></a>
 
@@ -611,23 +611,23 @@ Hyper MPI在HMPI层集合通信coll框架下新增KuComm分层拓扑组件，提
 
 #### 关闭OOB功能<a name="ZH-CN_TOPIC_0000002533333075"></a>
 
-建议测试Benchmark（例如OSU、GPCNET等）时，在命令行增加-x UCG\_PLANC\_UCX\_USE\_OOB=no，关闭复用OOB（out-of-band）资源功能，以提升Hyper MPI任务的性能。
+建议测试Benchmark（例如OSU、GPCNET等）时，在命令行增加-x UCG_PLANC_UCX_USE_OOB=no，关闭复用OOB（out-of-band）资源功能，以提升Hyper MPI任务的性能。
 
 示例：
 
-**mpirun -np** _16_ **-x UCG\_PLANC\_UCX\_USE\_OOB=no** **osu\_barrier**
+**mpirun -np** _16_ **-x UCG_PLANC_UCX_USE_OOB=no** **osu_barrier**
 
 #### 多网络平面场景使用说明<a name="ZH-CN_TOPIC_0000002533293123"></a>
 
-如果mpirun命令的运行环境中存在多个不同的网络平面，即UCX模块使用了多个不同网段的网口，则需要在mpirun命令的启动参数中额外增加-x UCX\_RC\_VERBS\_ROCE\_LOCAL\_SUBNET=y和-x UCX\_UD\_VERBS\_ROCE\_LOCAL\_SUBNET=y参数，否则会因网络不通导致下发任务无法继续执行。
+如果mpirun命令的运行环境中存在多个不同的网络平面，即UCX模块使用了多个不同网段的网口，则需要在mpirun命令的启动参数中额外增加-x UCX_RC_VERBS_ROCE_LOCAL_SUBNET=y和-x UCX_UD_VERBS_ROCE_LOCAL_SUBNET=y参数，否则会因网络不通导致下发任务无法继续执行。
 
 示例如下：
 
-**mpirun -np** _16_ **-N** _16_ **-x PATH -x LD\_LIBRARY\_PATH -x UCX\_RC\_VERBS\_ROCE\_LOCAL\_SUBNET=y -x UCX\_UD\_VERBS\_ROCE\_LOCAL\_SUBNET=y -x UCX\_NET\_DEVICES=**_mlx5\_0:1_**,**_mlx5\_1:1_ **osu\_init**
+**mpirun -np** _16_ **-N** _16_ **-x PATH -x LD_LIBRARY_PATH -x UCX_RC_VERBS_ROCE_LOCAL_SUBNET=y -x UCX_UD_VERBS_ROCE_LOCAL_SUBNET=y -x UCX_NET_DEVICES=**_mlx5_0:1_**,**_mlx5_1:1_ **osu_init**
 
 #### HUCX RC多网口容错<a name="ZH-CN_TOPIC_0000002501533076"></a>
 
-Hyper MPI中HUCX实现了RC（Reliably Connected）多网口容错（rc\_failover）功能。该功能使用多个网口，通过自动检测网口异常状态并将业务流量切换至可用网口上实现容错，减少业务因网络组件故障而异常终止的概率。
+Hyper MPI中HUCX实现了RC（Reliably Connected）多网口容错（rc_failover）功能。该功能使用多个网口，通过自动检测网口异常状态并将业务流量切换至可用网口上实现容错，减少业务因网络组件故障而异常终止的概率。
 
 当前该功能只支持RC连接方式。通过在mpirun命令行中添加如[表1](#_table11934015203915)所示参数来配置该功能。
 
@@ -651,7 +651,7 @@ Hyper MPI中HUCX实现了RC（Reliably Connected）多网口容错（rc\_failove
 
 命令示例如下：
 
-**mpirun -np** _64_ **-N** _32_ **--hostfile hf -x UCX\_TLS=rc\_f -x UCX\_MAX\_EAGER\_RAILS=**_2_ **-x UCX\_LOCAL\_CONN\_SAME\_DEV=**_y_ **-x UCX\_MAX\_AUX\_RAILS=**_2_ **-x UCX\_AUX\_TIMEOUT=3s osu\_bcast**
+**mpirun -np** _64_ **-N** _32_ **--hostfile hf -x UCX_TLS=rc_f -x UCX_MAX_EAGER_RAILS=**_2_ **-x UCX_LOCAL_CONN_SAME_DEV=**_y_ **-x UCX_MAX_AUX_RAILS=**_2_ **-x UCX_AUX_TIMEOUT=3s osu_bcast**
 
 #### 启动时延优化<a name="ZH-CN_TOPIC_0000002501373224"></a>
 
@@ -659,43 +659,43 @@ Hyper MPI中HUCX实现了RC（Reliably Connected）多网口容错（rc\_failove
 
 -   **--mca osc ^ucx**：使用osc（单边通信模块）时不指定ucx。由于ucx的初始化在业务启动流程中耗时较长，大部分集合通信业务中使用pml，很少会用到osc，因此该配置项可以节省一次ucx初始化的时间。
 -   **--mca pml ucx**：指定pml模块只初始化ucx，减少其他模块初始化对启动时延的影响。
--   **--mca oob\_tcp\_if\_include** _网卡名称_：为加快业务启动osu\_init时的fence流程，建议使用TCP带宽较大、时延更优的网卡，因为fence需要节点间发送TCP数据，带外TCP通信网卡往往会成为业务初始化的性能瓶颈。默认使用环境上获取到的第一张网卡，如有性能更好的其他网卡，可以通过该启动选项，提高通信时延性能。
--   **-x UCX\_TLS=sm,rc\_v**：传输层选择sm + rc\_v的组合方式。
+-   **--mca oob_tcp_if_include** _网卡名称_：为加快业务启动osu_init时的fence流程，建议使用TCP带宽较大、时延更优的网卡，因为fence需要节点间发送TCP数据，带外TCP通信网卡往往会成为业务初始化的性能瓶颈。默认使用环境上获取到的第一张网卡，如有性能更好的其他网卡，可以通过该启动选项，提高通信时延性能。
+-   **-x UCX_TLS=sm,rc_v**：传输层选择sm + rc_v的组合方式。
     -   sm表示节点内使用sm共享内存作为传输层，这加快了节点内进程的通信传输。
-    -   由于rc要初始化rc\_v、ud\_v、rc\_mlx和ud\_mlx，而rc\_v只需初始化rc\_v和ud\_v，因此节点间选择rc\_v，可以加快业务启动时延。
+    -   由于rc要初始化rc_v、ud_v、rc_mlx和ud_mlx，而rc_v只需初始化rc_v和ud_v，因此节点间选择rc_v，可以加快业务启动时延。
 
--   **-x UCX\_NET\_DEVICES**=_网卡名称_：选择的网卡数量会影响ud\_v的初始化时延。对于每个网卡设备的初始化，需获取该设备的全部gid\_attr，该过程较为耗时，因此建议减少网卡数量的选择。
+-   **-x UCX_NET_DEVICES**=_网卡名称_：选择的网卡数量会影响ud_v的初始化时延。对于每个网卡设备的初始化，需获取该设备的全部gid_attr，该过程较为耗时，因此建议减少网卡数量的选择。
 
 启动时延优化命令示例：
 
-**mpirun --mca osc ^ucx --mca pml ucx -np** _32_ **-x UCX\_TLS=sm,rc\_v --hostfile file -x UCX\_NET\_DEVICES=**_mlx5\_0:1_ **--mca oob\_tcp\_if\_include** _enp125s0f0_ **-x PATH -x LD\_LIBRARY\_PATH osu\_init**
+**mpirun --mca osc ^ucx --mca pml ucx -np** _32_ **-x UCX_TLS=sm,rc_v --hostfile file -x UCX_NET_DEVICES=**_mlx5_0:1_ **--mca oob_tcp_if_include** _enp125s0f0_ **-x PATH -x LD_LIBRARY_PATH osu_init**
 
 #### 命令示例<a name="ZH-CN_TOPIC_0000002533333077"></a>
 
-Hyper MPI使用MPI\_Allreduce算法6、MPI\_Barrier算法5和MPI\_Bcast算法3能获得较优的性能指标。
+Hyper MPI使用MPI_Allreduce算法6、MPI_Barrier算法5和MPI_Bcast算法3能获得较优的性能指标。
 
 -   IB网络环境命令示例
 
-    **mpirun -np** _384_ **-N** _48_ **--hostfile hf --bind-to core --map-by socket --rank-by core --mca btl ^vader,tcp,openib -x UCX\_TLS=sm,ud\_x -x UCX\_NET\_DEVICES=**_mlx5\_0:1_ **-x UCG\_PLANC\_UCX\_ALLREDUCE\_ATTR=I:**_6_**S:**_200_**R:**_0-_ **-x UCG\_PLANC\_UCX\_BARRIER\_ATTR=I:**_5_**S:**_200_**R:**_0_ **-x UCG\_PLANC\_UCX\_BCAST\_ATTR=I:**_3_**S:**_200_**R:**_0-_ **-x UCG\_PLANC\_UCX\_ALLREDUCE\_FANOUT\_INTRA\_DEGREE=**_3_ **-x UCG\_PLANC\_UCX\_ALLREDUCE\_FANIN\_INTRA\_DEGREE=**_2_ **-x UCG\_PLANC\_UCX\_ALLREDUCE\_FANOUT\_INTER\_DEGREE=**_7_ **-x UCG\_PLANC\_UCX\_ALLREDUCE\_FANIN\_INTER\_DEGREE=**_7_ **-x UCG\_PLANC\_UCX\_BARRIER\_FANOUT\_INTRA\_DEGREE=**_3_ **-x UCG\_PLANC\_UCX\_BARRIER\_FANIN\_INTRA\_DEGREE=**_2_ **-x UCG\_PLANC\_UCX\_BARRIER\_FANOUT\_INTER\_DEGREE=**_7_ **-x UCG\_PLANC\_UCX\_BARRIER\_FANIN\_INTER\_DEGREE=**_7_ _test\_case_
+    **mpirun -np** _384_ **-N** _48_ **--hostfile hf --bind-to core --map-by socket --rank-by core --mca btl ^vader,tcp,openib -x UCX_TLS=sm,ud_x -x UCX_NET_DEVICES=**_mlx5_0:1_ **-x UCG_PLANC_UCX_ALLREDUCE_ATTR=I:**_6_**S:**_200_**R:**_0-_ **-x UCG_PLANC_UCX_BARRIER_ATTR=I:**_5_**S:**_200_**R:**_0_ **-x UCG_PLANC_UCX_BCAST_ATTR=I:**_3_**S:**_200_**R:**_0-_ **-x UCG_PLANC_UCX_ALLREDUCE_FANOUT_INTRA_DEGREE=**_3_ **-x UCG_PLANC_UCX_ALLREDUCE_FANIN_INTRA_DEGREE=**_2_ **-x UCG_PLANC_UCX_ALLREDUCE_FANOUT_INTER_DEGREE=**_7_ **-x UCG_PLANC_UCX_ALLREDUCE_FANIN_INTER_DEGREE=**_7_ **-x UCG_PLANC_UCX_BARRIER_FANOUT_INTRA_DEGREE=**_3_ **-x UCG_PLANC_UCX_BARRIER_FANIN_INTRA_DEGREE=**_2_ **-x UCG_PLANC_UCX_BARRIER_FANOUT_INTER_DEGREE=**_7_ **-x UCG_PLANC_UCX_BARRIER_FANIN_INTER_DEGREE=**_7_ _test_case_
 
 -   RoCE网络环境命令示例
 
-    **mpirun -np** _384_ **-N** _48_ **--hostfile hf --bind-to core --map-by socket --rank-by core --mca btl ^vader,tcp,openib -x UCX\_TLS=sm,ud -x UCX\_NET\_DEVICES=**_mlx5\_1:1_ **-x UCG\_PLANC\_UCX\_ALLREDUCE\_ATTR=I:**_6_**S:**_200_**R:**_0-_ **-x UCG\_PLANC\_UCX\_BARRIER\_ATTR=I:**_5_**S:**_200_**R:**_0_ **-x UCG\_PLANC\_UCX\_BCAST\_ATTR=I:**_3_**S:**_200_**R:**_0-_ **-x UCG\_PLANC\_UCX\_ALLREDUCE\_FANOUT\_INTRA\_DEGREE=**_3_ **-x UCG\_PLANC\_UCX\_ALLREDUCE\_FANIN\_INTRA\_DEGREE=**_2_ **-x UCG\_PLANC\_UCX\_ALLREDUCE\_FANOUT\_INTER\_DEGREE=**_7_ **-x UCG\_PLANC\_UCX\_ALLREDUCE\_FANIN\_INTER\_DEGREE=**_7_ **-x UCG\_PLANC\_UCX\_BARRIER\_FANOUT\_INTRA\_DEGREE=**_3_ **-x UCG\_PLANC\_UCX\_BARRIER\_FANIN\_INTRA\_DEGREE=**_2_ **-x UCG\_PLANC\_UCX\_BARRIER\_FANOUT\_INTER\_DEGREE=**_7_ **-x UCG\_PLANC\_UCX\_BARRIER\_FANIN\_INTER\_DEGREE=**_7_ _test\_case_
+    **mpirun -np** _384_ **-N** _48_ **--hostfile hf --bind-to core --map-by socket --rank-by core --mca btl ^vader,tcp,openib -x UCX_TLS=sm,ud -x UCX_NET_DEVICES=**_mlx5_1:1_ **-x UCG_PLANC_UCX_ALLREDUCE_ATTR=I:**_6_**S:**_200_**R:**_0-_ **-x UCG_PLANC_UCX_BARRIER_ATTR=I:**_5_**S:**_200_**R:**_0_ **-x UCG_PLANC_UCX_BCAST_ATTR=I:**_3_**S:**_200_**R:**_0-_ **-x UCG_PLANC_UCX_ALLREDUCE_FANOUT_INTRA_DEGREE=**_3_ **-x UCG_PLANC_UCX_ALLREDUCE_FANIN_INTRA_DEGREE=**_2_ **-x UCG_PLANC_UCX_ALLREDUCE_FANOUT_INTER_DEGREE=**_7_ **-x UCG_PLANC_UCX_ALLREDUCE_FANIN_INTER_DEGREE=**_7_ **-x UCG_PLANC_UCX_BARRIER_FANOUT_INTRA_DEGREE=**_3_ **-x UCG_PLANC_UCX_BARRIER_FANIN_INTRA_DEGREE=**_2_ **-x UCG_PLANC_UCX_BARRIER_FANOUT_INTER_DEGREE=**_7_ **-x UCG_PLANC_UCX_BARRIER_FANIN_INTER_DEGREE=**_7_ _test_case_
 
 -   RoCE网络环境Stars集合通信卸载命令示例
 
-    **mpirun -np** _384_ **-N** _48_ **--hostfile hf --bind-to core --map-by socket --rank-by core --mca btl ^vader,tcp,openib -x UCX\_TLS=sm,ud -x UCG\_PLANC\_STARS\_TLS=rc\_acc** **-x UCG\_PLANC\_STARS\_RC\_ROCE\_LOCAL\_SUBNET=y** **-x UCG\_PLANC=ucx,stars -x UCX\_UD\_VERBS\_ROCE\_LOCAL\_SUBNET=y -x UCG\_PLANC\_STARS\_IBCAST\_ATTR=I:**_1_**S:**_200_**R:**_0_ **-x UCG\_PLANC\_STARS\_IALLGATHERV\_ATTR=I:**_1_**S:**_200_**R:**_0_ **-x UCG\_PLANC\_STARS\_ISCATTERV\_ATTR=I:**_1_**S:**_200_**R:**_0_ **-x UCG\_PLANC\_STARS\_IALLTOALLV\_ATTR=I:**_1_**S:**_200_**R:**_0_ **-x UCG\_PLANC\_STARS\_IBARRIER\_ATTR=I:**_1_**S:**_200_**R:**_0_ _test\_case_
+    **mpirun -np** _384_ **-N** _48_ **--hostfile hf --bind-to core --map-by socket --rank-by core --mca btl ^vader,tcp,openib -x UCX_TLS=sm,ud -x UCG_PLANC_STARS_TLS=rc_acc** **-x UCG_PLANC_STARS_RC_ROCE_LOCAL_SUBNET=y** **-x UCG_PLANC=ucx,stars -x UCX_UD_VERBS_ROCE_LOCAL_SUBNET=y -x UCG_PLANC_STARS_IBCAST_ATTR=I:**_1_**S:**_200_**R:**_0_ **-x UCG_PLANC_STARS_IALLGATHERV_ATTR=I:**_1_**S:**_200_**R:**_0_ **-x UCG_PLANC_STARS_ISCATTERV_ATTR=I:**_1_**S:**_200_**R:**_0_ **-x UCG_PLANC_STARS_IALLTOALLV_ATTR=I:**_1_**S:**_200_**R:**_0_ **-x UCG_PLANC_STARS_IBARRIER_ATTR=I:**_1_**S:**_200_**R:**_0_ _test_case_
 
 >![](public_sys-resources/icon-note.gif) **说明：** 
 >IB和RoCE两种网络环境均使用鲲鹏服务器架构和Mellanox类型的网卡。
 
 #### SDMA使用场景说明<a name="ZH-CN_TOPIC_0000002533293125"></a>
 
-System Direct memory access（SDMA）是系统中负责数据的高带宽低延迟搬运的模块，是一种分布式分离式的DMA引擎。当前HMPI默认未开启SDMA，若需使用SDMA，需要在mpirun命令的启动参数中显式增加“-x UCX\_TLS=sdma”参数。SDMA需要与posix或sysv同时使用，即“-x UCX\_TLS=posix,sdma”或“-x UCX\_TLS=sysv,sdma”。推荐鲲鹏920 72F系列使用Hyper MPI加SDMA的场景为PPN不大于128。
+System Direct memory access（SDMA）是系统中负责数据的高带宽低延迟搬运的模块，是一种分布式分离式的DMA引擎。当前HMPI默认未开启SDMA，若需使用SDMA，需要在mpirun命令的启动参数中显式增加“-x UCX_TLS=sdma”参数。SDMA需要与posix或sysv同时使用，即“-x UCX_TLS=posix,sdma”或“-x UCX_TLS=sysv,sdma”。推荐鲲鹏920 72F系列使用Hyper MPI加SDMA的场景为PPN不大于128。
 
 示例如下：
 
-**mpirun --allow-run-as-root -np** _2_ **-x UCX\_TLS=posix,sdma osu\_bw**
+**mpirun --allow-run-as-root -np** _2_ **-x UCX_TLS=posix,sdma osu_bw**
 
 #### Stars使用场景说明<a name="ZH-CN_TOPIC_0000002501533078"></a>
 
@@ -707,13 +707,13 @@ Compute();   // MPI应用插入其他计算任务，通信后台执行
 MPI_Wait();   // 等待通信完成
 ```
 
-使用Stars时，需要在mpirun命令的启动参数中指定Stars集合通信算法，比如-x UCG\_PLANC\_STARS\_IBCAST\_ATTR=I:\{算法编号\}S，详细示例说明请参见[RoCE网络环境Stars集合通信卸载命令示例](#li12956143113403)。
+使用Stars时，需要在mpirun命令的启动参数中指定Stars集合通信算法，比如-x UCG_PLANC_STARS_IBCAST_ATTR=I:{算法编号}S，详细示例说明请参见[RoCE网络环境Stars集合通信卸载命令示例](#li12956143113403)。
 
 #### MPI超时日志分析脚本使用说明<a name="ZH-CN_TOPIC_0000002501373226"></a>
 
-HMPI提供了各类卡住问题的超时日志打印来辅助增强定位的能力，通过日志可以区分出发送端和接收端，能够指导进行溯源到根因进程（节点）。超时日志需要通过mpi\_logparser.py来解析。
+HMPI提供了各类卡住问题的超时日志打印来辅助增强定位的能力，通过日志可以区分出发送端和接收端，能够指导进行溯源到根因进程（节点）。超时日志需要通过mpi_logparser.py来解析。
 
-**表 1**  mpi\_logparser.py脚本入参说明
+**表 1**  mpi_logparser.py脚本入参说明
 
 |参数|是否必选|说明|
 |--|--|--|
@@ -743,17 +743,17 @@ mpi_logparser.py -f output.log
 
 -   **[运行MPI作业提示网络设备内存无法分配](#ZH-CN_TOPIC_0000002533333083)**  
 
--   **[指定网卡名称错误，报错：network device '\*\*\*' is not available](#ZH-CN_TOPIC_0000002533293131)**  
+-   **[指定网卡名称错误，报错：network device '***' is not available](#ZH-CN_TOPIC_0000002533293131)**  
 
 -   **[指定网络类型错误，提示指定的网络类型不可用](#ZH-CN_TOPIC_0000002501533084)**  
 
 -   **[指定主机名错误，报错：Name or service not known](#ZH-CN_TOPIC_0000002501373232)**  
 
--   **[通信过程建链报错：ucp\_ep\_create\(...\)failed：Destination is unreachable](#ZH-CN_TOPIC_0000002533333085)**  
+-   **[通信过程建链报错：ucp_ep_create(...)failed：Destination is unreachable](#ZH-CN_TOPIC_0000002533333085)**  
 
--   **[在-x UCX\_IB\_GID\_INDEX命令中指定GID后报错](#ZH-CN_TOPIC_0000002533293133)**  
+-   **[在-x UCX_IB_GID_INDEX命令中指定GID后报错](#ZH-CN_TOPIC_0000002533293133)**  
 
--   **[找不到ARP表项引起的超时报错：ibv\_create\_ah...failed: Connection timed out](#ZH-CN_TOPIC_0000002501533086)**  
+-   **[找不到ARP表项引起的超时报错：ibv_create_ah...failed: Connection timed out](#ZH-CN_TOPIC_0000002501533086)**  
 
 -   **[由于网卡配置不当引起的超时报错：connect... failed：Connection timed out](#ZH-CN_TOPIC_0000002501373234)**  
 
@@ -773,25 +773,25 @@ mpi_logparser.py -f output.log
 
 -   **[UCP请求超时](#ZH-CN_TOPIC_0000002533293139)**  
 
--   **[运行osu\_alltoall/osu\_alltoallv/osu\_alltoallw/osu\_ialltoall/osu\_ialltoallv/osu\_ialltoallw时出现内存耗尽问题](#ZH-CN_TOPIC_0000002501533092)**  
+-   **[运行osu_alltoall/osu_alltoallv/osu_alltoallw/osu_ialltoall/osu_ialltoallv/osu_ialltoallw时出现内存耗尽问题](#ZH-CN_TOPIC_0000002501533092)**  
 
--   **[运行Alltoallv算法2报错：gatherv phase don't support displs \>= 2^31 bytes](#ZH-CN_TOPIC_0000002501373240)**  
+-   **[运行Alltoallv算法2报错：gatherv phase don't support displs >= 2^31 bytes](#ZH-CN_TOPIC_0000002501373240)**  
 
 -   **[环境open files值较大时导致Hyper MPI启动慢](#ZH-CN_TOPIC_0000002533333093)**  
 
--   **[UCX使用SDMA时，报错：UCX ERROR Failed to create sdma\_device\[0\] handle](#ZH-CN_TOPIC_0000002533293141)**  
+-   **[UCX使用SDMA时，报错：UCX ERROR Failed to create sdma_device[0] handle](#ZH-CN_TOPIC_0000002533293141)**  
 
 -   **[运行MPI作业，指定传输协议为RC或者UD时创建qp报错：Invalid argument](#ZH-CN_TOPIC_0000002501533094)**  
 
 -   **[运行MPI作业，指定传输协议为RC或者UD时创建qp报错：No space left on device](#ZH-CN_TOPIC_0000002501373242)**  
 
--   **[运行MPI作业，并启用Stars集合通信卸载，指定Stars传输协议为rc\_acc时报错：ibv\_wr\_complete fail, ret 12](#ZH-CN_TOPIC_0000002533333095)**  
+-   **[运行MPI作业，并启用Stars集合通信卸载，指定Stars传输协议为rc_acc时报错：ibv_wr_complete fail, ret 12](#ZH-CN_TOPIC_0000002533333095)**  
 
 -   **[运行MPI作业，网卡驱动报错：transport retry counter exceeded](#ZH-CN_TOPIC_0000002533293143)**  
 
 -   **[管理、计算网卡都使用板载网卡并安装RDMA驱动，跑多节点OSU集合通信测试不指定网卡报错](#ZH-CN_TOPIC_0000002501533096)**  
 
--   **[满核运行集合通信\(i\)osu\_alltoall\(v\)/\(i\)osu\_scatter\(v\)/\(i\)osu\_gather\(v\)节点卡住挂死](#ZH-CN_TOPIC_0000002501373244)**  
+-   **[满核运行集合通信(i)osu_alltoall(v)/(i)osu_scatter(v)/(i)osu_gather(v)节点卡住挂死](#ZH-CN_TOPIC_0000002501373244)**  
 
 -   **[在MPI线程中使用fork方法新建线程，导致运行时报错](#ZH-CN_TOPIC_0000002533333097)**  
 
@@ -822,7 +822,7 @@ Hyper MPI提交任务出现异常或者报错时，可通过“回退法”来�
 
 运行失败示例如下：
 
-**mpirun -np 1025 --hostfile hf8 hmpifile\_2021/allreduce/AllReduce**
+**mpirun -np 1025 --hostfile hf8 hmpifile_2021/allreduce/AllReduce**
 
 ```
 -------------------------------------------------------------------------- 
@@ -865,7 +865,7 @@ launch.
 
 **恢复步骤<a name="title3575mcpsimp"></a>**
 
-1.  使用PuTTY工具，以Hyper MPI普通用户（例如“hmpi\_user”）登录至作业执行节点。
+1.  使用PuTTY工具，以Hyper MPI普通用户（例如“hmpi_user”）登录至作业执行节点。
 2.  执行以下命令，查询每个作业执行节点的CPU核数。
 
     **lscpu**
@@ -896,7 +896,7 @@ launch.
 
 3.  计算集群作业执行节点CPU总核数，确保在运行**mpirun**命令时的进程数小于等于集群作业执行节点CPU总核数。以八个节点总核数1024为例，执行以下命令可成功提交MPI作业。
 
-    **mpirun -np** _1024_ **--hostfile hf8 hmpifile\_2021/allreduce/AllReduce**
+    **mpirun -np** _1024_ **--hostfile hf8 hmpifile_2021/allreduce/AllReduce**
 
     ```
     All tests are success
@@ -932,9 +932,9 @@ launch.
 
 **恢复步骤<a name="title1657mcpsimp"></a>**
 
-1.  使用PuTTY工具，以Hyper MPI普通用户（例如“hmpi\_user”）登录至作业执行节点。
+1.  使用PuTTY工具，以Hyper MPI普通用户（例如“hmpi_user”）登录至作业执行节点。
 2.  检查所有节点是否都安装Hyper MPI且各节点安装路径是否一致，或者检查Hyper MPI是否安装在已挂载的共享目录上。
-3.  检查环境变量是否配置正确。详情请参见《Kunpeng HPCKit 26.2.0 安装指南》中“安装卸载HPCKit \> 设置环境变量”。
+3.  检查环境变量是否配置正确。详情请参见《Kunpeng HPCKit 26.2.0 安装指南》中“安装卸载HPCKit > 设置环境变量”。
 
 ### 多节点运行mpirun时报某个文件无法找到或打开<a name="ZH-CN_TOPIC_0000002501373230"></a>
 
@@ -960,7 +960,7 @@ launch.
 
 -   报某个.so文件无法找到或打开。
 
-    “.bashrc”文件未配置“LD\_LIBRARY\_PATH”环境变量。
+    “.bashrc”文件未配置“LD_LIBRARY_PATH”环境变量。
 
 -   报某个文件无法找到或打开。
 
@@ -969,11 +969,11 @@ launch.
 **恢复步骤<a name="title4803mcpsimp"></a>**
 
 -   报某个.so文件无法找到或打开。
-    1.  使用PuTTY工具，以Hyper MPI普通用户（例如“hmpi\_user”）登录至作业执行节点。
-    2.  检查环境变量是否配置正确，详情请参见《Kunpeng HPCKit 26.2.0 安装指南》中“安装卸载HPCKit \> 设置环境变量”。
+    1.  使用PuTTY工具，以Hyper MPI普通用户（例如“hmpi_user”）登录至作业执行节点。
+    2.  检查环境变量是否配置正确，详情请参见《Kunpeng HPCKit 26.2.0 安装指南》中“安装卸载HPCKit > 设置环境变量”。
 
 -   报某个文件无法找到或打开。
-    1.  使用PuTTY工具，以Hyper MPI普通用户（例如“hmpi\_user”）登录至作业执行节点。
+    1.  使用PuTTY工具，以Hyper MPI普通用户（例如“hmpi_user”）登录至作业执行节点。
     2.  检查所有节点是否都安装Hyper MPI且各节点安装路径是否一致，或者检查Hyper MPI是否安装在已挂载的共享目录上。
 
 ### 运行MPI作业提示网络设备内存无法分配<a name="ZH-CN_TOPIC_0000002533333083"></a>
@@ -992,14 +992,14 @@ MPI作业执行节点内存不足，导致提示网络设备内存无法分配�
 
 **恢复步骤<a name="title1676mcpsimp"></a>**
 
-1.  使用PuTTY工具，以Hyper MPI普通用户（例如“hmpi\_user”）登录至作业执行节点。
+1.  使用PuTTY工具，以Hyper MPI普通用户（例如“hmpi_user”）登录至作业执行节点。
 2.  执行以下命令，查看作业执行节点上正在运行的进程。
 
     **top**
 
 3.  关闭与MPI作业执行无关的进程。
 
-### 指定网卡名称错误，报错：network device '\*\*\*' is not available<a name="ZH-CN_TOPIC_0000002533293131"></a>
+### 指定网卡名称错误，报错：network device '***' is not available<a name="ZH-CN_TOPIC_0000002533293131"></a>
 
 **现象描述<a name="title2034mcpsimp"></a>**
 
@@ -1007,7 +1007,7 @@ MPI作业执行节点内存不足，导致提示网络设备内存无法分配�
 
 运行失败示例如下：
 
-**mpirun  -np 8  -N 1  --hostfile \~/hmpifile\_2021/hostfile/hf8 -x UCX\_NET\_DEVICES=mlx5\_0:2 \~/hmpifile\_2021/allreduce/AllReduce**
+**mpirun  -np 8  -N 1  --hostfile ~/hmpifile_2021/hostfile/hf8 -x UCX_NET_DEVICES=mlx5_0:2 ~/hmpifile_2021/allreduce/AllReduce**
 
 ```
 [1632383945.549496] [arm-node132:2635376:0]    ucp_context.c:732  UCX  WARN  network device 'mlx5_0:2' is not available, please use one or more of: 'enp189s0f0'(tcp), 'enp1s0'(tcp), 'mlx5_0:1'(ib)
@@ -1019,7 +1019,7 @@ MPI作业执行节点内存不足，导致提示网络设备内存无法分配�
 
 **恢复步骤<a name="title2047mcpsimp"></a>**
 
-1.  使用PuTTY工具，以Hyper MPI普通用户（例如“hmpi\_user”）登录至作业执行节点。
+1.  使用PuTTY工具，以Hyper MPI普通用户（例如“hmpi_user”）登录至作业执行节点。
 2.  <a name="d1e7211"></a>执行以下命令，查询当前作业执行节点所有可用的网卡名称。
 
     **ibdev2netdev**
@@ -1028,16 +1028,16 @@ MPI作业执行节点内存不足，导致提示网络设备内存无法分配�
     mlx5_0 port 1 ==> enp1s0 (Up)
     ```
 
-3.  执行以下命令，将网卡名称修改为当前可用网卡名称，如mlx5\_0:1。
+3.  执行以下命令，将网卡名称修改为当前可用网卡名称，如mlx5_0:1。
 
-    **mpirun  -np** _16_ **-N** _2_ **--hostfile** _\~/hmpifile\_2021/hostfile/hf8_ **-x UCX\_NET\_DEVICES=**_mlx5\_0:1_ _\~/hmpifile\_2021/allreduce/AllReduce_
+    **mpirun  -np** _16_ **-N** _2_ **--hostfile** _~/hmpifile_2021/hostfile/hf8_ **-x UCX_NET_DEVICES=**_mlx5_0:1_ _~/hmpifile_2021/allreduce/AllReduce_
 
     >![](public_sys-resources/icon-note.gif) **说明：** 
-    >-   \~/hmpifile\_2021/hostfile：表示指定作业运行节点的文件路径。
+    >-   ~/hmpifile_2021/hostfile：表示指定作业运行节点的文件路径。
     >-   hf8：表示指定作业运行节点的文件。
-    >-   \~/hmpifile\_2021/allreduce：表示指定运行作业的路径。
+    >-   ~/hmpifile_2021/allreduce：表示指定运行作业的路径。
     >-   AllReduce：表示指定的运行作业。
-    >-   mlx5\_0:1：表示[步骤2](#d1e7211)查询到的网卡名称。
+    >-   mlx5_0:1：表示[步骤2](#d1e7211)查询到的网卡名称。
 
 ### 指定网络类型错误，提示指定的网络类型不可用<a name="ZH-CN_TOPIC_0000002501533084"></a>
 
@@ -1047,7 +1047,7 @@ MPI作业执行节点内存不足，导致提示网络设备内存无法分配�
 
     运行失败示例如下：
 
-    **mpirun  -np 16  -N 2  --hostfile \~/hmpifile\_2021/hostfile/hf8 -x UCX\_NET\_DEVICES=mlx5\_0:1 -x UCX\_TLS=tcp \~/hmpifile\_2021/allreduce/AllReduce**
+    **mpirun  -np 16  -N 2  --hostfile ~/hmpifile_2021/hostfile/hf8 -x UCX_NET_DEVICES=mlx5_0:1 -x UCX_TLS=tcp ~/hmpifile_2021/allreduce/AllReduce**
 
     ```
     [1632384264.377328] [arm-node132:2637768:0]    ucp_context.c:1073 UCX  ERROR no usable transports/devices (asked tcp on network:mlx5_0:1 ) 
@@ -1069,14 +1069,14 @@ MPI作业执行节点内存不足，导致提示网络设备内存无法分配�
 
 **可能原因<a name="title4596mcpsimp"></a>**
 
-运行**mpirun**命令时指定了无效的-x UCX\_TLS参数，不同网络设备所支持的传输模式不同。
+运行**mpirun**命令时指定了无效的-x UCX_TLS参数，不同网络设备所支持的传输模式不同。
 
 **恢复步骤<a name="title4600mcpsimp"></a>**
 
-1.  使用PuTTY工具，以Hyper MPI普通用户（例如“hmpi\_user”）登录至作业执行节点。
+1.  使用PuTTY工具，以Hyper MPI普通用户（例如“hmpi_user”）登录至作业执行节点。
 2.  <a name="d1e7346"></a>执行以下命令，查询当前作业执行节点所有可用的网卡类型以及相应的网络协议。
 
-    **ucx\_info -d**
+    **ucx_info -d**
 
     ```
     Transport: rc_mlx5 
@@ -1085,15 +1085,15 @@ MPI作业执行节点内存不足，导致提示网络设备内存无法分配�
 
 3.  执行以下命令，将网络协议修改为当前可用网络协议。
 
-    **mpirun  -np** _16_ **-N** _2_ **--hostfile** _\~/hmpifile\_2021/hostfile/hf8_ **-x UCX\_NET\_DEVICES=**_mlx5\_0:1_ **-x UCX\_TLS=**_rc\_mlx5_ _\~/hmpifile\_2021/allreduce/AllReduce_
+    **mpirun  -np** _16_ **-N** _2_ **--hostfile** _~/hmpifile_2021/hostfile/hf8_ **-x UCX_NET_DEVICES=**_mlx5_0:1_ **-x UCX_TLS=**_rc_mlx5_ _~/hmpifile_2021/allreduce/AllReduce_
 
     >![](public_sys-resources/icon-note.gif) **说明：** 
-    >-   \~/hmpifile\_2021/hostfile：表示指定作业运行节点的文件路径。
+    >-   ~/hmpifile_2021/hostfile：表示指定作业运行节点的文件路径。
     >-   hf8：表示指定作业运行节点的文件。
-    >-   \~/hmpifile\_2021/allreduce：表示指定运行作业的路径。
+    >-   ~/hmpifile_2021/allreduce：表示指定运行作业的路径。
     >-   AllReduce：表示指定的运行作业。
-    >-   mlx5\_0:1：表示[步骤2](#d1e7346)查询到的网卡类型。
-    >-   rc\_mlx5：表示[步骤2](#d1e7346)查询到的网络协议。
+    >-   mlx5_0:1：表示[步骤2](#d1e7346)查询到的网卡类型。
+    >-   rc_mlx5：表示[步骤2](#d1e7346)查询到的网络协议。
 
 ### 指定主机名错误，报错：Name or service not known<a name="ZH-CN_TOPIC_0000002501373232"></a>
 
@@ -1103,7 +1103,7 @@ MPI作业执行节点内存不足，导致提示网络设备内存无法分配�
 
 运行失败示例如下：
 
-**mpirun  -np 16  -N 2  --hostfile \~/hmpifile\_2021/hostfile/hf8 -x UCX\_NET\_DEVICES=mlx5\_0:1 /home/hmpi\_user/hmpifile\_2021/allreduce/AllReduce**
+**mpirun  -np 16  -N 2  --hostfile ~/hmpifile_2021/hostfile/hf8 -x UCX_NET_DEVICES=mlx5_0:1 /home/hmpi_user/hmpifile_2021/allreduce/AllReduce**
 
 ```
 ssh: Could not resolve hostname arm-node056: Name or service not known 
@@ -1152,15 +1152,15 @@ in your environment. We apologize for the problem.
 
 **恢复步骤<a name="title2135mcpsimp"></a>**
 
-1.  使用PuTTY工具，以Hyper MPI普通用户（例如“hmpi\_user”）登录至作业执行节点。
+1.  使用PuTTY工具，以Hyper MPI普通用户（例如“hmpi_user”）登录至作业执行节点。
 2.  执行以下命令，修改“hf8”文件。
 
     1.  打开“hf8”文件。
 
-        **vi \~**_/hmpifile\_2021/hostfile/hf8_
+        **vi ~**_/hmpifile_2021/hostfile/hf8_
 
     >![](public_sys-resources/icon-note.gif) **说明：** 
-    >-   \~/hmpifile\_2021/hostfile：表示指定作业运行节点的文件路径。
+    >-   ~/hmpifile_2021/hostfile：表示指定作业运行节点的文件路径。
     >-   hf8：表示指定作业运行节点的文件。
 
     1.  按“i”进入编辑模式，根据错误提示将“arm-node056”改成“arm-node134”（局域网中存在此主机名）。
@@ -1173,10 +1173,10 @@ in your environment. We apologize for the problem.
 
 3.  执行以下命令，验证“hf8”文件是否修改成功。
 
-    **mpirun  -np** _16_ **-N** _2_ **--hostfile** _\~/hmpifile\_2021/hostfile/hf8_ **-x UCX\_NET\_DEVICES=**_mlx5\_0:1_ _\~/hmpifile\_2021/allreduce/AllReduce_
+    **mpirun  -np** _16_ **-N** _2_ **--hostfile** _~/hmpifile_2021/hostfile/hf8_ **-x UCX_NET_DEVICES=**_mlx5_0:1_ _~/hmpifile_2021/allreduce/AllReduce_
 
     >![](public_sys-resources/icon-note.gif) **说明：** 
-    >-   \~/hmpifile\_2021/allreduce：表示指定运行作业的路径。
+    >-   ~/hmpifile_2021/allreduce：表示指定运行作业的路径。
     >-   AllReduce：表示指定的运行作业。
 
     出现以下回显信息，表示“hf8”文件修改成功。
@@ -1185,7 +1185,7 @@ in your environment. We apologize for the problem.
     All tests are success
     ```
 
-### 通信过程建链报错：ucp\_ep\_create\(...\)failed：Destination is unreachable<a name="ZH-CN_TOPIC_0000002533333085"></a>
+### 通信过程建链报错：ucp_ep_create(...)failed：Destination is unreachable<a name="ZH-CN_TOPIC_0000002533333085"></a>
 
 **现象描述<a name="title4517mcpsimp"></a>**
 
@@ -1201,21 +1201,21 @@ ep在与对端建链时，由于网络问题导致建链请求无法到达对端
 
 **恢复步骤<a name="title4524mcpsimp"></a>**
 
--   查看除ucp\_ep\_create报错之外的报错日志，根据错误日志中的信息在本章中检索有无对应的具体章节。
+-   查看除ucp_ep_create报错之外的报错日志，根据错误日志中的信息在本章中检索有无对应的具体章节。
 -   若本章中能够检索到报错信息，进入具体章节按照说明进行故障排查。
--   若本章中检索不到报错信息，ucp\_ep\_create报错中会打印对端节点名，在两端节点上检查网络配置、网卡配置是否有问题。
+-   若本章中检索不到报错信息，ucp_ep_create报错中会打印对端节点名，在两端节点上检查网络配置、网卡配置是否有问题。
 
-### 在-x UCX\_IB\_GID\_INDEX命令中指定GID后报错<a name="ZH-CN_TOPIC_0000002533293133"></a>
+### 在-x UCX_IB_GID_INDEX命令中指定GID后报错<a name="ZH-CN_TOPIC_0000002533293133"></a>
 
 **现象描述<a name="title3623mcpsimp"></a>**
 
-在-x UCX\_IB\_GID\_INDEX命令中指定无效GID后，出现如下报错：
+在-x UCX_IB_GID_INDEX命令中指定无效GID后，出现如下报错：
 
 ```
 ib_device.c:848 UCX ERROR ibv_query_gid(dev=mlx5_0 port=1 index=10) failed: No such file or directory
 ```
 
-在-x UCX\_IB\_GID\_INDEX命令中指定GID后，出现如下报错：
+在-x UCX_IB_GID_INDEX命令中指定GID后，出现如下报错：
 
 ```
 pml_ucx.c:384  Error: ucp_ep_create(proc=1) failed: Destination is unreachable
@@ -1229,10 +1229,10 @@ pml_ucx.c:384  Error: ucp_ep_create(proc=1) failed: Destination is unreachable
 **恢复步骤<a name="title3634mcpsimp"></a>**
 
 -   命令行指定的GID与服务器GID不一致。
-    1.  使用PuTTY工具，以Hyper MPI普通用户（例如“hmpi\_user”）登录至作业执行节点。
+    1.  使用PuTTY工具，以Hyper MPI普通用户（例如“hmpi_user”）登录至作业执行节点。
     2.  <a name="d1e7678"></a>执行以下命令，查询GID的值。
 
-        **show\_gids | grep -E "\(\(25\[0-5\]|2\[0-4\]\[0-9\]|1\[0-9\]\[0-9\]|\[1-9\]?\[0-9\]\)\\.\)\{3\}\(25\[0-5\]|2\[0-4\]\[0-9\]|1\[0-9\]\[0-9\]|\[1-9\]?\[0-9\]\)" | grep v2 | awk '\{print $3\}'**
+        **show_gids | grep -E "((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])" | grep v2 | awk '{print $3}'**
 
         ```
         5
@@ -1243,15 +1243,15 @@ pml_ucx.c:384  Error: ucp_ep_create(proc=1) failed: Destination is unreachable
 
 1.  执行以下命令，指定GID值为[b](#d1e7678)中查询到的GID的值，例如5。
 
-    **-x UCX\_IB\_GID\_INDEX=**_5_
+    **-x UCX_IB_GID_INDEX=**_5_
 
 -   多台作业执行节点GID不一致。
-    1.  使用PuTTY工具，以Hyper MPI普通用户（例如“hmpi\_user”）登录至作业执行节点。
-    2.  执行以下命令，修改“\~/.bashrc”文件。
+    1.  使用PuTTY工具，以Hyper MPI普通用户（例如“hmpi_user”）登录至作业执行节点。
+    2.  执行以下命令，修改“~/.bashrc”文件。
 
-        打开“\~/.bashrc”文件。
+        打开“~/.bashrc”文件。
 
-        **vi \~/.bashrc**
+        **vi ~/.bashrc**
 
         按“i”进入编辑模式，添加如下内容。
 
@@ -1264,9 +1264,9 @@ pml_ucx.c:384  Error: ucp_ep_create(proc=1) failed: Destination is unreachable
 
     3.  执行以下命令，使配置生效。
 
-        **source \~/.bashrc**
+        **source ~/.bashrc**
 
-### 找不到ARP表项引起的超时报错：ibv\_create\_ah...failed: Connection timed out<a name="ZH-CN_TOPIC_0000002501533086"></a>
+### 找不到ARP表项引起的超时报错：ibv_create_ah...failed: Connection timed out<a name="ZH-CN_TOPIC_0000002501533086"></a>
 
 **现象描述<a name="title6580mcpsimp"></a>**
 
@@ -1307,7 +1307,7 @@ pml_ucx.c:384  Error: ucp_ep_create(proc=1) failed: Destination is unreachable
 
 **可能原因<a name="title6587mcpsimp"></a>**
 
--   报错信息为MPI的UCX模块ibv\_create\_ah部分报出，原因为未在超时时间内获取对端地址。
+-   报错信息为MPI的UCX模块ibv_create_ah部分报出，原因为未在超时时间内获取对端地址。
 -   交换机的ARP防攻击特性，默认配置为限制同一个源IP在1秒内发送的ARP报文数量为30个。Hyper MPI大规模（100+节点）作业启动建链，1秒内会超过30个ARP报文（无ARP缓存情况下），导致ARP丢包，最终导致MPI建链超时。
 -   通过Linux本地ARP缓存表，本地缓存对端地址后，可以从本地ARP表中获取对端地址，无需再次发送ARP请求。
 
@@ -1329,7 +1329,7 @@ pml_ucx.c:384  Error: ucp_ep_create(proc=1) failed: Destination is unreachable
 **可能原因<a name="title4750mcpsimp"></a>**
 
 -   防火墙没有关闭，导致建链失败。
--   如果使用RoCE网络，可能是RoCE网络没有配置，网口没有指定IP地址，通过**show\_gids**命令检查发现RoCE网口没有配置IP地址。
+-   如果使用RoCE网络，可能是RoCE网络没有配置，网口没有指定IP地址，通过**show_gids**命令检查发现RoCE网口没有配置IP地址。
 
     ```
     DEV	PORT	INDEX	GID	                                IPv4	        VeR	DEV 
@@ -1429,7 +1429,7 @@ mpirun noticed that process rank 5 with PID 435171 on node arm-129 exited on sig
 
 **可能原因<a name="title3485mcpsimp"></a>**
 
--   没有使用补丁版本的HUCX源码包，通过调度器指定UCX\_TLS=ud，将MPI作业挂起一段时间再恢复，导致超时报错。
+-   没有使用补丁版本的HUCX源码包，通过调度器指定UCX_TLS=ud，将MPI作业挂起一段时间再恢复，导致超时报错。
 -   使用RoCE网络运行，但是没有配置网卡侧和交换机侧的无损网络。
 -   计算节点间的网络线路出现了故障。
 
@@ -1438,7 +1438,7 @@ mpirun noticed that process rank 5 with PID 435171 on node arm-129 exited on sig
 1.  在对应版本HUCX的最新补丁包中已经支持该需求，下载对应版本的补丁包，重新编译安装。
 2.  如果没有配置网卡侧和交换机侧的无损网络，需要配置后再运行作业。
 3.  如果无损网络没有问题，排查出错节点间的网络线路是否有问题。
-4.  如果物理链路和硬件配置上未排查出问题，可以设置**-x UCX\_UD\_TIMER\_BACKOFF=1 -x UCX\_UD\_TIMER\_TICK=100ms -x UCX\_UD\_TIMEOUT=600s**增大超时时间，暂时规避问题。
+4.  如果物理链路和硬件配置上未排查出问题，可以设置**-x UCX_UD_TIMER_BACKOFF=1 -x UCX_UD_TIMER_TICK=100ms -x UCX_UD_TIMEOUT=600s**增大超时时间，暂时规避问题。
 
 ### 运行报错failed to bind memory，但应用仍可以正常结束<a name="ZH-CN_TOPIC_0000002501533088"></a>
 
@@ -1503,7 +1503,7 @@ node   0   1   2   3
 
 运行失败示例如下：
 
-**mpirun --allow-run-as-root --timeout 350 -np 1024  -N 128  --hostfile \~/hmpifile\_2021/hostfile/hf8  -x UCX\_TLS=tcp  -x UCG\_PLANC\_UCX\_ALLGATHERV\_ATTR=I:4 \~/hmpifile\_2021/allgatherv/allgatherv**
+**mpirun --allow-run-as-root --timeout 350 -np 1024  -N 128  --hostfile ~/hmpifile_2021/hostfile/hf8  -x UCX_TLS=tcp  -x UCG_PLANC_UCX_ALLGATHERV_ATTR=I:4 ~/hmpifile_2021/allgatherv/allgatherv**
 
 ```
 Authorized users only. All activities may be monitored and reported. 
@@ -1557,11 +1557,11 @@ Allreduce算法8由于自身算法特性，导致规约顺序无法固定，影�
 
 将rank进程绑定至逻辑核上，需要将“--bind-to”的值指定为“hwthread”，示例如下：
 
-**mpirun -np** _4_ **--bind-to hwthread** _osu\_bcast_
+**mpirun -np** _4_ **--bind-to hwthread** _osu_bcast_
 
 >![](public_sys-resources/icon-note.gif) **说明：** 
 >若需要将rank进程按照逻辑核进行分布，则需要将“--bind-to”和“--map-by”的值均指定为“hwthread”，示例如下：
->**mpirun -np** _4_ **--map-by hwthread** **--bind-to hwthread** _osu\_bcast_
+>**mpirun -np** _4_ **--map-by hwthread** **--bind-to hwthread** _osu_bcast_
 
 ### UCX版本不匹配告警<a name="ZH-CN_TOPIC_0000002533333091"></a>
 
@@ -1585,7 +1585,7 @@ UCX WARN UCP version is incompatible, required:x.xx, actual:x.xx
 
 **现象描述<a name="title2988mcpsimp"></a>**
 
-测试OSU集合通信osu\_iallgather和osu\_iallgatherv时，当size大于32768，UCP request timeout。
+测试OSU集合通信osu_iallgather和osu_iallgatherv时，当size大于32768，UCP request timeout。
 
 **可能原因<a name="title2991mcpsimp"></a>**
 
@@ -1593,46 +1593,46 @@ UCX WARN UCP version is incompatible, required:x.xx, actual:x.xx
 
 **恢复步骤<a name="title2994mcpsimp"></a>**
 
-在运行命令中添加参数“-x UCX\_RNDV\_THRESH=8192”。
+在运行命令中添加参数“-x UCX_RNDV_THRESH=8192”。
 
-### 运行osu\_alltoall/osu\_alltoallv/osu\_alltoallw/osu\_ialltoall/osu\_ialltoallv/osu\_ialltoallw时出现内存耗尽问题<a name="ZH-CN_TOPIC_0000002501533092"></a>
+### 运行osu_alltoall/osu_alltoallv/osu_alltoallw/osu_ialltoall/osu_ialltoallv/osu_ialltoallw时出现内存耗尽问题<a name="ZH-CN_TOPIC_0000002501533092"></a>
 
 **现象描述<a name="title3593mcpsimp"></a>**
 
-在满核（核数576、内存约500GB）下运行osu\_alltoall/osu\_alltoallv/osu\_alltoallw/osu\_ialltoall/osu\_ialltoallv/osu\_ialltoallw，当使用默认的max\_message\_size（1MB）时，会出现内存耗尽问题。
+在满核（核数576、内存约500GB）下运行osu_alltoall/osu_alltoallv/osu_alltoallw/osu_ialltoall/osu_ialltoallv/osu_ialltoallw，当使用默认的max_message_size（1MB）时，会出现内存耗尽问题。
 
 **可能原因<a name="title3596mcpsimp"></a>**
 
-通过实测及理论分析，运行osu\_alltoall/osu\_alltoallv/osu\_alltoallw/osu\_ialltoall/osu\_ialltoallv/osu\_ialltoallw时，会申请较多的内存，内存占用主要包含以下2个方面：
+通过实测及理论分析，运行osu_alltoall/osu_alltoallv/osu_alltoallw/osu_ialltoall/osu_ialltoallv/osu_ialltoallw时，会申请较多的内存，内存占用主要包含以下2个方面：
 
 1.  每个进程需要申请sendbuf和recvbuf两块内存，每个大小为：
 
-    bufsize = options.max\_message\_size \* numprocs（需要按PAGESIZE对齐）
+    bufsize = options.max_message_size * numprocs（需要按PAGESIZE对齐）
 
-    如果指定-c参数，则需要额外申请expected\_buffer和temp\_buffer两块内存，大小和sendbuf、recvbuf的大小相等。
+    如果指定-c参数，则需要额外申请expected_buffer和temp_buffer两块内存，大小和sendbuf、recvbuf的大小相等。
 
-2.  UM通信所需要的内存size\_um。
+2.  UM通信所需要的内存size_um。
 
 每个节点需要的内存大小：
 
 -   不指定-c参数：![](figures/zh-cn_image_0000002501373252.png)
 -   指定-c参数：![](figures/zh-cn_image_0000002533333105.png)
 
-osu\_alltoall默认的max\_message\_size为1MB，按单节点2p、进程数575计算，最少需要650GB，远远大于单节点16张32GB满插内存。
+osu_alltoall默认的max_message_size为1MB，按单节点2p、进程数575计算，最少需要650GB，远远大于单节点16张32GB满插内存。
 
 >![](public_sys-resources/icon-note.gif) **说明：** 
 >在上述计算中：
->-   UM通信所需要的内存size\_um约为4GB。
+>-   UM通信所需要的内存size_um约为4GB。
 >-   单节点满插实际可用内存为471GB。
 
 **恢复步骤<a name="title3617mcpsimp"></a>**
 
-根据上述公式合理设置max\_message\_size。例如按最大16节点满核（每个节点的进程数576、内存500GB）计算，在指定-c参数时，建议设置"-m 16384"将max\_message\_size设置为16KB。
+根据上述公式合理设置max_message_size。例如按最大16节点满核（每个节点的进程数576、内存500GB）计算，在指定-c参数时，建议设置"-m 16384"将max_message_size设置为16KB。
 
 >![](public_sys-resources/icon-note.gif) **说明：** 
->除了通过上述解决方案规避之外，还可以修改用例/应用源码，在调用MPI\_Alltoall/MPI\_Alltoallv/MPI\_Alltoallw/MPI\_Ialltoall/MPI\_Ialltoallv/MPI\_Ialltoallw接口时，将sbuf修改为MPI\_IN\_PLACE，以降低这些接口使用的内存规模。
+>除了通过上述解决方案规避之外，还可以修改用例/应用源码，在调用MPI_Alltoall/MPI_Alltoallv/MPI_Alltoallw/MPI_Ialltoall/MPI_Ialltoallv/MPI_Ialltoallw接口时，将sbuf修改为MPI_IN_PLACE，以降低这些接口使用的内存规模。
 
-### 运行Alltoallv算法2报错：gatherv phase don't support displs \>= 2^31 bytes<a name="ZH-CN_TOPIC_0000002501373240"></a>
+### 运行Alltoallv算法2报错：gatherv phase don't support displs >= 2^31 bytes<a name="ZH-CN_TOPIC_0000002501373240"></a>
 
 **现象描述<a name="title2975mcpsimp"></a>**
 
@@ -1646,7 +1646,7 @@ Alltoallv node-aware plummer gatherv phase don't support displs >= 2^31 bytes
 
 算法不支持节点内所有进程sendcounts总和超过2^31的场景，详见[场景十五：Alltoallv集合操作节点内所有进程sendcounts总和超过2^31](#section157041038112412)。
 
-例如，运行osu应用时，进程数为128，节点数为2，每节点64进程，节点内所有进程sendcounts总和为128\*64\*count（count为每个sendcounts的值，即发送数据个数，osu中所有sendcounts都相同），当count达到256K时，sendcounts总和为2G，超过2^31，此场景会报出错误日志并退出作业。
+例如，运行osu应用时，进程数为128，节点数为2，每节点64进程，节点内所有进程sendcounts总和为128*64*count（count为每个sendcounts的值，即发送数据个数，osu中所有sendcounts都相同），当count达到256K时，sendcounts总和为2G，超过2^31，此场景会报出错误日志并退出作业。
 
 **恢复步骤<a name="title2984mcpsimp"></a>**
 
@@ -1666,11 +1666,11 @@ sendcounts不能超过Alltoallv算法2的限制，或者改用Alltoallv算法1�
 
 1.  <a name="p4827mcpsimp"></a>排查是否由于fdmax值过大引起Hyper MPI启动时延慢，排查方法如下：
 
-    在运行命令中添加**--mca plm\_base\_verbose 11**参数打开日志开关，在打印内容中查找“plm:rsh: close max fd”字段内容，查看当前fdmax值。通常当fdmax值大于1073741816时，启动时延将大于3min，值越大，时延呈线性增加。
+    在运行命令中添加**--mca plm_base_verbose 11**参数打开日志开关，在打印内容中查找“plm:rsh: close max fd”字段内容，查看当前fdmax值。通常当fdmax值大于1073741816时，启动时延将大于3min，值越大，时延呈线性增加。
 
 2.  若由于fdmax值过大引起Hyper MPI启动时延慢，可以根据需要使用**ulimit -n** _open files值_命令修改当前的open files值，fdmax值会取“当前fd的最大值”与“open files值”的更小者，然后参考[步骤1](#p4827mcpsimp)查看修改的fdmax值是否生效。
 
-### UCX使用SDMA时，报错：UCX ERROR Failed to create sdma\_device\[0\] handle<a name="ZH-CN_TOPIC_0000002533293141"></a>
+### UCX使用SDMA时，报错：UCX ERROR Failed to create sdma_device[0] handle<a name="ZH-CN_TOPIC_0000002533293141"></a>
 
 **现象描述<a name="title2083mcpsimp"></a>**
 
@@ -1682,7 +1682,7 @@ UCX ERROR Failed to create sdma_device[0] handle
 
 **可能原因<a name="title2087mcpsimp"></a>**
 
-在开启smmu的环境中，UCX的sm传输层默认会选择SDMA作为共享内存进行数据传输，单IO-Die中SDMA内核驱动默认总通道数为160个，其中包含独立通道数和共享通道数。MPI每启动一个业务进程，UCX会申请该进程所在IO-Die的一个SDMA共享通道。如果SDMA没有申请共享通道，MPI会在初始化阶段报错退出。如果通过命令参数-x UCX\_SDMA\_SHARED\_CHANNEL\_MODE=n选择独立通道模式，而SDMA独立通道数量申请不足，MPI同样会在初始化阶段报错退出。
+在开启smmu的环境中，UCX的sm传输层默认会选择SDMA作为共享内存进行数据传输，单IO-Die中SDMA内核驱动默认总通道数为160个，其中包含独立通道数和共享通道数。MPI每启动一个业务进程，UCX会申请该进程所在IO-Die的一个SDMA共享通道。如果SDMA没有申请共享通道，MPI会在初始化阶段报错退出。如果通过命令参数-x UCX_SDMA_SHARED_CHANNEL_MODE=n选择独立通道模式，而SDMA独立通道数量申请不足，MPI同样会在初始化阶段报错退出。
 
 **恢复步骤<a name="title2090mcpsimp"></a>**
 
@@ -1690,7 +1690,7 @@ UCX ERROR Failed to create sdma_device[0] handle
 
 1.  查看当前单IO-Die中SDMA内核共享通道数。
 
-    **cat /sys/module/sdma\_dae/parameters/share\_chns**
+    **cat /sys/module/sdma_dae/parameters/share_chns**
 
     ```
     16
@@ -1698,20 +1698,20 @@ UCX ERROR Failed to create sdma_device[0] handle
 
 2.  移除SDMA内核模块。
 
-    **rmmod sdma\_dae**
+    **rmmod sdma_dae**
 
 3.  重新插入SDMA内核模块，并修改共享通道数。
     -   **例1**
 
-        **modprobe sdma\_dae share\_chns=**_160_
+        **modprobe sdma_dae share_chns=**_160_
 
         例如，修改共享通道数为160个，则独立通道数为0个，因此该配置允许MPI在单IO-Die中启动SDMA业务进程。
 
     -   **例2**
 
-        **modprobe sdma\_dae share\_chns=**_8_
+        **modprobe sdma_dae share_chns=**_8_
 
-        例如，修改共享通道数为8个，则独立通道数为152个，因此该配置允许MPI在使用-x UCX\_SDMA\_SHARED\_CHANNEL\_MODE=n时，在单IO-Die中最多启动152个业务进程。
+        例如，修改共享通道数为8个，则独立通道数为152个，因此该配置允许MPI在使用-x UCX_SDMA_SHARED_CHANNEL_MODE=n时，在单IO-Die中最多启动152个业务进程。
 
 ### 运行MPI作业，指定传输协议为RC或者UD时创建qp报错：Invalid argument<a name="ZH-CN_TOPIC_0000002501533094"></a>
 
@@ -1726,7 +1726,7 @@ UCX ERROR Failed to create UD QP TX wr:256 sge:6 inl:64 resp:0 RX wr:4096 sge:1 
 
 **可能原因<a name="title5590mcpsimp"></a>**
 
-当前BIOS配置不支持较多的sge，因为UCX中RC协议默认使用的sge值为5，UD协议默认使用的sge值为6。通过执行**ibv\_devinfo -v**命令可以查看当前网口配置支持的最大值max\_sge。
+当前BIOS配置不支持较多的sge，因为UCX中RC协议默认使用的sge值为5，UD协议默认使用的sge值为6。通过执行**ibv_devinfo -v**命令可以查看当前网口配置支持的最大值max_sge。
 
 ```
 max_sge:    2
@@ -1734,9 +1734,9 @@ max_sge:    2
 
 **恢复步骤<a name="title5595mcpsimp"></a>**
 
-在执行命令中增加参数**-x UCX\_RC\_VERBS\_TX\_MIN\_SGE=**_2_ **-x UCX\_UD\_VERBS\_TX\_MIN\_SGE=**_1_。
+在执行命令中增加参数**-x UCX_RC_VERBS_TX_MIN_SGE=**_2_ **-x UCX_UD_VERBS_TX_MIN_SGE=**_1_。
 
-其中，**UCX\_RC\_VERBS\_TX\_MIN\_SGE**配置为**ibv\_devinfo -v**命令查询出的max\_sge值；**UCX\_UD\_VERBS\_TX\_MIN\_SGE**配置为max\_sge-1。
+其中，**UCX_RC_VERBS_TX_MIN_SGE**配置为**ibv_devinfo -v**命令查询出的max_sge值；**UCX_UD_VERBS_TX_MIN_SGE**配置为max_sge-1。
 
 ### 运行MPI作业，指定传输协议为RC或者UD时创建qp报错：No space left on device<a name="ZH-CN_TOPIC_0000002501373242"></a>
 
@@ -1751,7 +1751,7 @@ UCX ERROR Failed to create UD QP TX wr:256 sge:6 inl:64 resp:0 RX wr:4096 sge:1 
 
 **可能原因<a name="title3408mcpsimp"></a>**
 
-当MPI作业的建链数过大，所需qp数量超过硬件最大限制而资源不足时，会发生该报错。通过执行**ibv\_devinfo -v**命令可以查看网口能够创建的最大qp数量max\_qp。
+当MPI作业的建链数过大，所需qp数量超过硬件最大限制而资源不足时，会发生该报错。通过执行**ibv_devinfo -v**命令可以查看网口能够创建的最大qp数量max_qp。
 
 ```
 max_qp:    1048576
@@ -1764,11 +1764,11 @@ max_qp:    1048576
 -   增加MPI作业使用的网口数量，以减少单一网口所需创建的qp数量。例如，使用两个及以上网口进行通信。
 -   减少MPI作业所需qp数量，例如，尝试优化进程排布以减少建链数。
 
-### 运行MPI作业，并启用Stars集合通信卸载，指定Stars传输协议为rc\_acc时报错：ibv\_wr\_complete fail, ret 12<a name="ZH-CN_TOPIC_0000002533333095"></a>
+### 运行MPI作业，并启用Stars集合通信卸载，指定Stars传输协议为rc_acc时报错：ibv_wr_complete fail, ret 12<a name="ZH-CN_TOPIC_0000002533333095"></a>
 
 **现象描述<a name="title3256mcpsimp"></a>**
 
-运行MPI作业，并使能Stars集合通信卸载，指定Stars传输协议为rc\_acc时报错：
+运行MPI作业，并使能Stars集合通信卸载，指定Stars传输协议为rc_acc时报错：
 
 ```
 ibv_wr_complete fail, ret 12
@@ -1780,7 +1780,7 @@ Stars部分算法（如Bcast算法3、4，Allgatherv算法1）在ibv qp上下发
 
 **恢复步骤<a name="title3263mcpsimp"></a>**
 
--   增大Stars RC qp队列深度，可通过“UCG\_PLANC\_STARS\_RC\_TX\_QUEUE\_LEN”参数设置，默认为1024，建议设置为8192。
+-   增大Stars RC qp队列深度，可通过“UCG_PLANC_STARS_RC_TX_QUEUE_LEN”参数设置，默认为1024，建议设置为8192。
 -   建议使用Stars卸载时单通信域进程不超过1024进程。
 
 ### 运行MPI作业，网卡驱动报错：transport retry counter exceeded<a name="ZH-CN_TOPIC_0000002533293143"></a>
@@ -1799,8 +1799,8 @@ HUCX中的传输层RC不会在软件中做重试，而是借助网卡的硬件�
 
 **恢复步骤<a name="title4487mcpsimp"></a>**
 
--   增大RC单次请求超时时间，可通过“UCX\_RC\_TIMEOUT”参数设置，默认为1s。
--   增大RC超时的重传次数，可通过“UCX\_RC\_RETRY\_COUNT”参数设置，默认为7次。
+-   增大RC单次请求超时时间，可通过“UCX_RC_TIMEOUT”参数设置，默认为1s。
+-   增大RC超时的重传次数，可通过“UCX_RC_RETRY_COUNT”参数设置，默认为7次。
 
 >![](public_sys-resources/icon-note.gif) **说明：** 
 >需结合网络实际延迟合理设置上述两个参数。
@@ -1826,11 +1826,11 @@ HUCX中的传输层RC不会在软件中做重试，而是借助网卡的硬件�
 
 在运行MPI应用时只指定计算网口为可用的RDMA网口，排除管理网口。
 
-### 满核运行集合通信\(i\)osu\_alltoall\(v\)/\(i\)osu\_scatter\(v\)/\(i\)osu\_gather\(v\)节点卡住挂死<a name="ZH-CN_TOPIC_0000002501373244"></a>
+### 满核运行集合通信(i)osu_alltoall(v)/(i)osu_scatter(v)/(i)osu_gather(v)节点卡住挂死<a name="ZH-CN_TOPIC_0000002501373244"></a>
 
 **现象描述<a name="title5566mcpsimp"></a>**
 
-在满核下运行 \(i\)osu\_alltoall\(v\)/\(i\)osu\_scatter\(v\)/\(i\)osu\_gather\(v\)，当使用默认的max\_message\_size（1MB）时，节点会卡住挂死。
+在满核下运行 (i)osu_alltoall(v)/(i)osu_scatter(v)/(i)osu_gather(v)，当使用默认的max_message_size（1MB）时，节点会卡住挂死。
 
 **可能原因<a name="title5569mcpsimp"></a>**
 
@@ -1842,17 +1842,17 @@ HUCX中的传输层RC不会在软件中做重试，而是借助网卡的硬件�
 >![](public_sys-resources/icon-note.gif) **说明：** 
 >-   PPN -- 每个节点的进程数。
 >-   np -- 总进程数。
->-   max\_msg\_size -- 指定集合通信最大包长。
+>-   max_msg_size -- 指定集合通信最大包长。
 
 **恢复步骤<a name="title5582mcpsimp"></a>**
 
-根据单节点实际内存，代入不同OSU版本的\(i\)osu\_alltoall\(v\)/\(i\)osu\_scatter\(v\)/\(i\)osu\_gather\(v\)内存占用公式中计算max\_msg\_size，在mpirun命令中通过-m参数指定最大包长的值。
+根据单节点实际内存，代入不同OSU版本的(i)osu_alltoall(v)/(i)osu_scatter(v)/(i)osu_gather(v)内存占用公式中计算max_msg_size，在mpirun命令中通过-m参数指定最大包长的值。
 
 ### 在MPI线程中使用fork方法新建线程，导致运行时报错<a name="ZH-CN_TOPIC_0000002533333097"></a>
 
 **现象描述<a name="title6533mcpsimp"></a>**
 
-在部分服务器上使用MPI运行osu\_latency\_mp等用例时会有Segment报错，但不影响运行以及功能。报错信息参考：
+在部分服务器上使用MPI运行osu_latency_mp等用例时会有Segment报错，但不影响运行以及功能。报错信息参考：
 
 ```
 Caught signal 11 (Segmentation fault: address not mapped to object at address 0x3dbaf590)
@@ -1860,13 +1860,13 @@ Caught signal 11 (Segmentation fault: address not mapped to object at address 0x
 
 **可能原因<a name="title6537mcpsimp"></a>**
 
-根据[OpenMPI官方文档](https://www.open-mpi.org/faq/?category=tuning#fork-warning)，在MPI进程中使用fork\(\)、system\(\)、popen\(\)等操作是不安全的。这是因为这些操作依赖于多种因素，包括操作系统、计算机硬件和网络堆栈。开发人员应尽量避免在MPI应用程序中调用此类非安全操作。
+根据[OpenMPI官方文档](https://www.open-mpi.org/faq/?category=tuning#fork-warning)，在MPI进程中使用fork()、system()、popen()等操作是不安全的。这是因为这些操作依赖于多种因素，包括操作系统、计算机硬件和网络堆栈。开发人员应尽量避免在MPI应用程序中调用此类非安全操作。
 
 **规避方法<a name="title6541mcpsimp"></a>**
 
 在部分网卡上，可以通过禁用DC协议来规避。
 
-**-x UCX\_TLS=^dc**
+**-x UCX_TLS=^dc**
 
 ## 算法地图<a name="ZH-CN_TOPIC_0000002501373246"></a>
 
@@ -2028,9 +2028,9 @@ Caught signal 11 (Segmentation fault: address not mapped to object at address 0x
 |4|Node-aware Knomial tree|
 
 
-**Reduce\_scatter\_block算法地图<a name="section13321034113914"></a>**
+**Reduce_scatter_block算法地图<a name="section13321034113914"></a>**
 
-**表 14**  Reduce\_scatter\_block算法地图
+**表 14**  Reduce_scatter_block算法地图
 
 |算法序号|算法内容|
 |--|--|
@@ -2038,9 +2038,9 @@ Caught signal 11 (Segmentation fault: address not mapped to object at address 0x
 |2|Ring|
 
 
-**Reduce\_scatter算法地图<a name="section18833133824119"></a>**
+**Reduce_scatter算法地图<a name="section18833133824119"></a>**
 
-**表 15**  Reduce\_scatter算法地图
+**表 15**  Reduce_scatter算法地图
 
 |算法序号|算法内容|
 |--|--|
@@ -2064,9 +2064,9 @@ Caught signal 11 (Segmentation fault: address not mapped to object at address 0x
 
 -   **[Hyper MPI 2.4.3及以上版本命令参数](#ZH-CN_TOPIC_0000002533333101)**  
 
--   **[Hyper MPI 1.3.\*及以上版本命令参数](#ZH-CN_TOPIC_0000002533293149)**  
+-   **[Hyper MPI 1.3.*及以上版本命令参数](#ZH-CN_TOPIC_0000002533293149)**  
 
--   **[Hyper MPI 1.2.\*及以下版本命令参数](#ZH-CN_TOPIC_0000002501533102)**  
+-   **[Hyper MPI 1.2.*及以下版本命令参数](#ZH-CN_TOPIC_0000002501533102)**  
 
 ### Hyper MPI 26.1.RC1及以上版本命令参数<a name="ZH-CN_TOPIC_0000002512187518"></a>
 
@@ -2187,7 +2187,7 @@ Caught signal 11 (Segmentation fault: address not mapped to object at address 0x
 本文介绍当前Hyper MPI 2.4.3及以上版本命令参数。
 
 >![](public_sys-resources/icon-note.gif) **说明：** 
->Hyper MPI 2.4.3及以上版本命令参数为在1.3.\*及以上版本命令参数基础上新增的命令参数。
+>Hyper MPI 2.4.3及以上版本命令参数为在1.3.*及以上版本命令参数基础上新增的命令参数。
 
 使用Hyper MPI命令参数指定算法时，可以参考[算法地图](#ZH-CN_TOPIC_0000002501373246)了解具体参数值的含义。
 
@@ -2198,13 +2198,13 @@ Caught signal 11 (Segmentation fault: address not mapped to object at address 0x
 |-x UCG_PLANC_ALLTOALLV_ALGO_SELECT=|取值类型：string取值范围：y：开启Alltoallv小包场景下算法自动切换功能。n：关闭Alltoallv小包场景下算法自动切换功能。默认值：n|可选参数，开启该功能后，当不指定Alltoallv算法时，在256字节及以下的小包场景下切换为性能更好的Node-aware Plummer算法；关闭该功能后，不进行算法切换。示例：**-x UCG_PLANC_ALLTOALLV_ALGO_SELECT=y**|
 
 
-### Hyper MPI 1.3.\*及以上版本命令参数<a name="ZH-CN_TOPIC_0000002533293149"></a>
+### Hyper MPI 1.3.*及以上版本命令参数<a name="ZH-CN_TOPIC_0000002533293149"></a>
 
-本文介绍当前Hyper MPI 1.3.\*及以上版本命令参数。
+本文介绍当前Hyper MPI 1.3.*及以上版本命令参数。
 
 使用Hyper MPI命令参数指定算法时，可以参考[算法地图](#ZH-CN_TOPIC_0000002501373246)了解具体参数值的含义。
 
-**表 1**  Hyper MPI 1.3.\*版本命令参数
+**表 1**  Hyper MPI 1.3.*版本命令参数
 
 |Hyper MPI 1.3.*版本命令参数|取值|参数说明|
 |--|--|--|
@@ -2252,13 +2252,13 @@ Caught signal 11 (Segmentation fault: address not mapped to object at address 0x
 |-x UCX_REQ_TIMEOUT|取值类型：double单位可为s/ms/us/ns，默认单位为s取值范围：任意大于0的实数默认值：600s|可选参数，ucp request超时检测的超时阈值，当点对点通信请求未完成时间超过该阈值时给出超时报警。示例：**-x  UCX_REQ_TIMEOUT=100s**|
 
 
-### Hyper MPI 1.2.\*及以下版本命令参数<a name="ZH-CN_TOPIC_0000002501533102"></a>
+### Hyper MPI 1.2.*及以下版本命令参数<a name="ZH-CN_TOPIC_0000002501533102"></a>
 
-Hyper MPI在支持1.3.\*版本命令参数的基础上兼容1.2.\*及以下版本的命令参数。本文介绍Hyper MPI 1.2.\*及以下版本的命令参数，1.2.\*及以下版本的命令参数与1.3.\*版本命令参数之间的生效规则和转换关系。
+Hyper MPI在支持1.3.*版本命令参数的基础上兼容1.2.*及以下版本的命令参数。本文介绍Hyper MPI 1.2.*及以下版本的命令参数，1.2.*及以下版本的命令参数与1.3.*版本命令参数之间的生效规则和转换关系。
 
 **生效规则<a name="title3774mcpsimp"></a>**
 
--   如果不对任何版本的命令参数进行手动赋值，则生效值为1.3.\*版本命令参数的默认值。
+-   如果不对任何版本的命令参数进行手动赋值，则生效值为1.3.*版本命令参数的默认值。
 -   如果手动为Hyper MPI命令参数赋值，生效规则如[表1](#_table1656417492126)所示。
 
     **表 1**  生效规则
@@ -2276,23 +2276,23 @@ Hyper MPI在支持1.3.\*版本命令参数的基础上兼容1.2.\*及以下版�
 
 
 -   如果手动为Hyper MPI命令参数赋值，生效规则如下：
-    -   同时为1.3.\*版本命令参数和1.2.\*及以下版本命令参数赋值，且值均合法，则生效值为1.3.\*版本命令参数的值。
-    -   同时为1.3.\*版本命令参数和1.2.\*及以下版本命令参数赋值，但1.2.\*及以下版本命令参数的值不合法，则生效值为1.3.\*版本命令参数的值。
-    -   同时为1.3.\*版本命令参数和1.2.\*及以下版本命令参数赋值，但1.3.\*版本命令参数的值不合法，则生效值为1.2.\*及以下版本命令参数的值。
-    -   同时为1.3.\*版本命令参数和1.2.\*及以下版本命令参数赋值，且值均不合法，则生效值为1.3.\*版本命令参数的默认值。
-    -   仅为1.3.\*版本命令参数赋值，且值合法，则生效值为1.3.\*版本命令参数的值。
-    -   仅为1.3.\*版本命令参数赋值，但值不合法，则生效值为1.3.\*版本命令参数的默认值。
-    -   仅为1.2.\*及以下版本命令参数赋值，且值合法，则生效值为1.2.\*及以下版本命令参数的值。
-    -   仅为1.2.\*及以下版本命令参数赋值，但值不合法，则生效值为1.3.\*版本命令参数的默认值。
+    -   同时为1.3.*版本命令参数和1.2.*及以下版本命令参数赋值，且值均合法，则生效值为1.3.*版本命令参数的值。
+    -   同时为1.3.*版本命令参数和1.2.*及以下版本命令参数赋值，但1.2.*及以下版本命令参数的值不合法，则生效值为1.3.*版本命令参数的值。
+    -   同时为1.3.*版本命令参数和1.2.*及以下版本命令参数赋值，但1.3.*版本命令参数的值不合法，则生效值为1.2.*及以下版本命令参数的值。
+    -   同时为1.3.*版本命令参数和1.2.*及以下版本命令参数赋值，且值均不合法，则生效值为1.3.*版本命令参数的默认值。
+    -   仅为1.3.*版本命令参数赋值，且值合法，则生效值为1.3.*版本命令参数的值。
+    -   仅为1.3.*版本命令参数赋值，但值不合法，则生效值为1.3.*版本命令参数的默认值。
+    -   仅为1.2.*及以下版本命令参数赋值，且值合法，则生效值为1.2.*及以下版本命令参数的值。
+    -   仅为1.2.*及以下版本命令参数赋值，但值不合法，则生效值为1.3.*版本命令参数的默认值。
 
 **使用建议<a name="title3904mcpsimp"></a>**
 
--   较Hyper MPI 1.2.\*版本命令参数，Hyper MPI 1.3.\*版本的命令参数可以提供更全面、更优的性能，建议使用Hyper MPI 1.3.\*版本的命令参数。
+-   较Hyper MPI 1.2.*版本命令参数，Hyper MPI 1.3.*版本的命令参数可以提供更全面、更优的性能，建议使用Hyper MPI 1.3.*版本的命令参数。
 -   使用Hyper MPI命令参数指定算法时，可以参考[算法地图](#ZH-CN_TOPIC_0000002501373246)了解具体参数值的含义。
 
 **命令参数及转换关系<a name="title3911mcpsimp"></a>**
 
-**表 2**  1.2.\*及以下版本命令参数及其与1.3.\*版本命令参数之间转换关系
+**表 2**  1.2.*及以下版本命令参数及其与1.3.*版本命令参数之间转换关系
 
 |Hyper MPI 1.2.*及以下版本命令参数|Hyper MPI 1.3.*版本命令参数|取值|参数说明|
 |--|--|--|--|
