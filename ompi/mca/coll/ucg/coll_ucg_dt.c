@@ -19,27 +19,96 @@
 static mca_coll_ucg_type_table_t ucg_type_table = {.attr_key = MPI_KEYVAL_INVALID};
 static mca_coll_ucg_conv_pool_t mca_coll_ucg_conv_pool;
 
-static ucg_status_t mca_coll_ucg_op_reduce(void *op, const void *source, void *target,
-                                           int32_t count, void *dt)
+static ucg_status_t mca_coll_ucg_op_reduce(void *op, const void *source, void *target, int32_t count, void *dt)
 {
-    ompi_op_t *ompi_op = (ompi_op_t*)op;
-    ompi_datatype_t *ompi_dt = (ompi_datatype_t*)dt;
-    ompi_op_reduce(ompi_op, (void*)source, target, count, ompi_dt);
+    ompi_op_t *ompi_op = (ompi_op_t *)op;
+    ompi_datatype_t *ompi_dt = (ompi_datatype_t *)dt;
+    ompi_op_reduce(ompi_op, (void *)source, target, count, ompi_dt);
     return UCG_OK;
 }
 
-static inline mca_coll_ucg_convertor_t* mca_coll_ucg_conv_pool_get(void)
+static inline mca_coll_ucg_convertor_t *mca_coll_ucg_conv_pool_get(void)
 {
     return (mca_coll_ucg_convertor_t *)opal_free_list_wait(&mca_coll_ucg_conv_pool.flist);
 }
 
 static inline void mca_coll_ucg_conv_pool_put(mca_coll_ucg_convertor_t *conv)
 {
-    opal_free_list_return(&mca_coll_ucg_conv_pool.flist, (opal_free_list_item_t*)conv);
+    opal_free_list_return(&mca_coll_ucg_conv_pool.flist, (opal_free_list_item_t *)conv);
     return;
 }
 
-static void* mca_coll_ucg_conv_start_pack(const void *user_buf, void *user_dt, int32_t count)
+static ucg_status_t mca_coll_ucg_ddt2iov_list(void *user_dt, const void *addr, int count, void ***base_addr,
+                                              size_t **length, int *cnt)
+{
+    int ret = OMPI_SUCCESS;
+    ompi_datatype_t *datatype = (ompi_datatype_t *)user_dt;
+    *cnt = 0;
+    bool done = false;
+    size_t size;
+    opal_convertor_t convertor;
+    uint32_t iov_count, iov_idx;
+    int HPEM_UCX_IOVEC_MAX = 128;
+    struct iovec iov[HPEM_UCX_IOVEC_MAX];
+    uint32_t ucx_iov_idx;
+    OBJ_CONSTRUCT(&convertor, opal_convertor_t);
+    ret = opal_convertor_copy_and_prepare_for_send(ompi_mpi_local_convertor, &datatype->super, count, addr, 0,
+                                                   &convertor);
+    if (ret != OMPI_SUCCESS) {
+        UCG_ERROR("fail to convert datatype");
+        opal_convertor_cleanup(&convertor);
+        OBJ_DESTRUCT(&convertor);
+        return UCG_ERR_NO_RESOURCE;
+    }
+    ucx_iov_idx = 0;
+    do {
+        iov_count = HPEM_UCX_IOVEC_MAX;
+        iov_idx = 0;
+        done = opal_convertor_raw(&convertor, iov, &iov_count, &size);
+        (*cnt) += iov_count;
+        void **new_base = (void **)realloc((*base_addr), (*cnt) * sizeof(void *));
+        if (new_base == NULL) {
+            free(*base_addr);
+            *base_addr = NULL;
+            free(*length);
+            *length = NULL;
+            opal_convertor_cleanup(&convertor);
+            OBJ_DESTRUCT(&convertor);
+            UCG_ERROR("fail to alloc space");
+            return UCG_ERR_NO_RESOURCE;
+        }
+        *base_addr = new_base;
+        size_t *new_length = (size_t *)realloc((*length), (*cnt) * sizeof(size_t));
+        if (new_length == NULL) {
+            free(*base_addr);
+            *base_addr = NULL;
+            free(*length);
+            *length = NULL;
+            opal_convertor_cleanup(&convertor);
+            OBJ_DESTRUCT(&convertor);
+            UCG_ERROR("fail to alloc space");
+            return UCG_ERR_NO_RESOURCE;
+        }
+        *length = new_length;
+        while (iov_idx != iov_count) {
+            (*base_addr)[ucx_iov_idx] = iov[iov_idx].iov_base;
+            (*length)[ucx_iov_idx] = iov[iov_idx].iov_len;
+            ucx_iov_idx++;
+            iov_idx++;
+        }
+        if ((*cnt) != ucx_iov_idx) {
+            UCG_ERROR("bad parameters");
+            opal_convertor_cleanup(&convertor);
+            OBJ_DESTRUCT(&convertor);
+            return UCG_ERR_INVALID_PARAM;
+        }
+    } while (!done);
+    opal_convertor_cleanup(&convertor);
+    OBJ_DESTRUCT(&convertor);
+    return UCG_OK;
+}
+
+static void *mca_coll_ucg_conv_start_pack(const void *user_buf, void *user_dt, int32_t count)
 {
     ompi_datatype_t *datatype = (ompi_datatype_t *)user_dt;
     mca_coll_ucg_convertor_t *convertor;
@@ -47,9 +116,7 @@ static void* mca_coll_ucg_conv_start_pack(const void *user_buf, void *user_dt, i
     convertor = mca_coll_ucg_conv_pool_get();
     OMPI_DATATYPE_RETAIN(datatype);
     convertor->datatype = datatype;
-    int rc = opal_convertor_copy_and_prepare_for_send(ompi_mpi_local_convertor,
-                                                      &datatype->super,
-                                                      count, user_buf, 0,
+    int rc = opal_convertor_copy_and_prepare_for_send(ompi_mpi_local_convertor, &datatype->super, count, user_buf, 0,
                                                       &convertor->opal_conv);
     if (rc != OPAL_SUCCESS) {
         OMPI_DATATYPE_RELEASE(datatype);
@@ -67,9 +134,9 @@ static ucg_status_t mca_coll_ucg_conv_pack(void *conv, uint64_t offset, void *bu
     size_t pack_length;
     int rc;
 
-    iov_count    = 1;
+    iov_count = 1;
     iov.iov_base = buffer;
-    iov.iov_len  = *length;
+    iov.iov_len = *length;
 
     opal_convertor_set_position(&convertor->opal_conv, &offset);
     pack_length = *length;
@@ -83,7 +150,7 @@ static ucg_status_t mca_coll_ucg_conv_pack(void *conv, uint64_t offset, void *bu
     return UCG_OK;
 }
 
-static void* mca_coll_ucg_conv_start_unpack(void *user_buf, void *user_dt, int32_t count)
+static void *mca_coll_ucg_conv_start_unpack(void *user_buf, void *user_dt, int32_t count)
 {
     ompi_datatype_t *datatype = (ompi_datatype_t *)user_dt;
     mca_coll_ucg_convertor_t *convertor;
@@ -92,9 +159,7 @@ static void* mca_coll_ucg_conv_start_unpack(void *user_buf, void *user_dt, int32
     OMPI_DATATYPE_RETAIN(datatype);
     convertor->datatype = datatype;
     convertor->offset = 0;
-    int rc = opal_convertor_copy_and_prepare_for_recv(ompi_mpi_local_convertor,
-                                                      &datatype->super,
-                                                      count, user_buf, 0,
+    int rc = opal_convertor_copy_and_prepare_for_recv(ompi_mpi_local_convertor, &datatype->super, count, user_buf, 0,
                                                       &convertor->opal_conv);
     if (rc != OPAL_SUCCESS) {
         OMPI_DATATYPE_RELEASE(datatype);
@@ -113,18 +178,16 @@ static ucg_status_t mca_coll_ucg_conv_unpack(void *conv, uint64_t offset, const 
     struct iovec iov;
     opal_convertor_t opal_conv;
 
-    iov_count    = 1;
-    iov.iov_base = (void*)buffer;
-    iov.iov_len  = *length;
+    iov_count = 1;
+    iov.iov_base = (void *)buffer;
+    iov.iov_len = *length;
 
     /* in case if unordered message arrived - create separate convertor to
      * unpack data. */
     if (offset != convertor->offset) {
         OBJ_CONSTRUCT(&opal_conv, opal_convertor_t);
-        opal_convertor_copy_and_prepare_for_recv(ompi_mpi_local_convertor,
-                                                 &convertor->datatype->super,
-                                                 convertor->opal_conv.count,
-                                                 convertor->opal_conv.pBaseBuf, 0,
+        opal_convertor_copy_and_prepare_for_recv(ompi_mpi_local_convertor, &convertor->datatype->super,
+                                                 convertor->opal_conv.count, convertor->opal_conv.pBaseBuf, 0,
                                                  &opal_conv);
         opal_convertor_set_position(&opal_conv, &offset);
         rc = opal_convertor_unpack(&opal_conv, &iov, &iov_count, &unpack_length);
@@ -164,9 +227,7 @@ static void mca_coll_ucg_convertor_destruct(mca_coll_ucg_convertor_t *convertor)
     OBJ_DESTRUCT(&convertor->opal_conv);
 }
 
-OBJ_CLASS_INSTANCE(mca_coll_ucg_convertor_t,
-                   opal_free_list_item_t,
-                   mca_coll_ucg_convertor_construct,
+OBJ_CLASS_INSTANCE(mca_coll_ucg_convertor_t, opal_free_list_item_t, mca_coll_ucg_convertor_construct,
                    mca_coll_ucg_convertor_destruct);
 
 static inline ucg_dt_type_t ompi_dt_2_ucg_dt_type(ompi_datatype_t *ompi_dt)
@@ -217,8 +278,7 @@ static inline ucg_op_type_t ompi_op_2_ucg_op_type(ompi_op_t *ompi_op)
     }
 }
 
-static int mca_coll_ucg_type_destroy_user_dt(ompi_datatype_t* datatype, int keyval,
-                                             void *attr_val, void *extra)
+static int mca_coll_ucg_type_destroy_user_dt(ompi_datatype_t *datatype, int keyval, void *attr_val, void *extra)
 {
     ucg_dt_h ucg_dt = (ucg_dt_h)attr_val;
     ucg_dt_destroy(ucg_dt);
@@ -236,12 +296,8 @@ static int mca_coll_ucg_type_create_user_dt(ompi_datatype_t *ompi_dt, ucg_dt_h *
     ompi_datatype_get_extent(ompi_dt, &lb, &extent);
     ompi_datatype_get_true_extent(ompi_dt, &true_lb, &true_extent);
     ucg_dt_params_t params;
-    params.field_mask = UCG_DT_PARAMS_FIELD_TYPE |
-                        UCG_DT_PARAMS_FIELD_USER_DT |
-                        UCG_DT_PARAMS_FIELD_SIZE |
-                        UCG_DT_PARAMS_FIELD_EXTENT |
-                        UCG_DT_PARAMS_FIELD_TRUE_LB |
-                        UCG_DT_PARAMS_FIELD_TRUE_EXTENT;
+    params.field_mask = UCG_DT_PARAMS_FIELD_TYPE | UCG_DT_PARAMS_FIELD_USER_DT | UCG_DT_PARAMS_FIELD_SIZE |
+                        UCG_DT_PARAMS_FIELD_EXTENT | UCG_DT_PARAMS_FIELD_TRUE_LB | UCG_DT_PARAMS_FIELD_TRUE_EXTENT;
     params.type = UCG_DT_TYPE_USER;
     params.user_dt = ompi_dt;
     params.size = (uint32_t)size;
@@ -256,6 +312,7 @@ static int mca_coll_ucg_type_create_user_dt(ompi_datatype_t *ompi_dt, ucg_dt_h *
         params.conv.unpack = mca_coll_ucg_conv_unpack;
         params.conv.finish = mca_coll_ucg_conv_finish;
     }
+    params.conv.ddt2iov = mca_coll_ucg_ddt2iov_list;
     ucg_status_t status = ucg_dt_create(&params, ucg_dt);
     if (status != UCG_OK) {
         UCG_ERROR("Failed to create user-defined dt");
@@ -301,11 +358,9 @@ static int mca_coll_ucg_type_create_dt(void)
     /* Create a key for adding user-defined ucg_dt to ompi_dt */
     ompi_attribute_fn_ptr_union_t copy_fn;
     ompi_attribute_fn_ptr_union_t del_fn;
-    copy_fn.attr_datatype_copy_fn = (MPI_Type_internal_copy_attr_function*)MPI_TYPE_NULL_COPY_FN;
+    copy_fn.attr_datatype_copy_fn = (MPI_Type_internal_copy_attr_function *)MPI_TYPE_NULL_COPY_FN;
     del_fn.attr_datatype_delete_fn = mca_coll_ucg_type_destroy_user_dt;
-    int rc = ompi_attr_create_keyval(TYPE_ATTR, copy_fn, del_fn,
-                                     &ucg_type_table.attr_key, NULL, 0,
-                                     NULL);
+    int rc = ompi_attr_create_keyval(TYPE_ATTR, copy_fn, del_fn, &ucg_type_table.attr_key, NULL, 0, NULL);
     if (rc != OMPI_SUCCESS) {
         UCG_ERROR("Failed to create keyval: %d", rc);
         goto err_destroy_dt;
@@ -349,9 +404,7 @@ err_destroy_op:
     return OMPI_ERROR;
 }
 
-static int mca_coll_ucg_type_adapt_dt(ompi_datatype_t *ompi_dt,
-                                      ucg_dt_type_t type,
-                                      ucg_dt_h *ucg_dt)
+static int mca_coll_ucg_type_adapt_dt(ompi_datatype_t *ompi_dt, ucg_dt_type_t type, ucg_dt_h *ucg_dt)
 {
     if (type != UCG_DT_TYPE_USER) {
         *ucg_dt = ucg_type_table.predefined_dt[type];
@@ -360,7 +413,7 @@ static int mca_coll_ucg_type_adapt_dt(ompi_datatype_t *ompi_dt,
 
     int rc;
     int found = 0;
-    rc = ompi_attr_get_c(ompi_dt->d_keyhash, ucg_type_table.attr_key, (void**)ucg_dt, &found);
+    rc = ompi_attr_get_c(ompi_dt->d_keyhash, ucg_type_table.attr_key, (void **)ucg_dt, &found);
     if (rc == OMPI_SUCCESS && found) {
         return OMPI_SUCCESS;
     }
@@ -370,19 +423,16 @@ static int mca_coll_ucg_type_adapt_dt(ompi_datatype_t *ompi_dt,
         return rc;
     }
 
-    rc = ompi_attr_set_c(TYPE_ATTR, ompi_dt, &ompi_dt->d_keyhash,
-                         ucg_type_table.attr_key, (void*)*ucg_dt, false);
+    rc = ompi_attr_set_c(TYPE_ATTR, ompi_dt, &ompi_dt->d_keyhash, ucg_type_table.attr_key, (void *)*ucg_dt, false);
     if (rc != OMPI_SUCCESS) {
-        mca_coll_ucg_type_destroy_user_dt(ompi_dt, ucg_type_table.attr_key, (void*)*ucg_dt, NULL);
+        mca_coll_ucg_type_destroy_user_dt(ompi_dt, ucg_type_table.attr_key, (void *)*ucg_dt, NULL);
         UCG_ERROR("Failed to add UCG datatype attribute for %s: %d", ompi_dt->name, rc);
         return rc;
     }
     return OMPI_SUCCESS;
 }
 
-static int mca_coll_ucg_type_adapt_op(ompi_op_t *ompi_op,
-                                      ucg_op_type_t type,
-                                      ucg_op_h *ucg_op)
+static int mca_coll_ucg_type_adapt_op(ompi_op_t *ompi_op, ucg_op_type_t type, ucg_op_h *ucg_op)
 {
     if (type != UCG_OP_TYPE_USER) {
         *ucg_op = ucg_type_table.predefined_op[type];
@@ -391,12 +441,10 @@ static int mca_coll_ucg_type_adapt_op(ompi_op_t *ompi_op,
     /* *ucg_op should point to a memory space of size UCG_OP_SIZE */
     assert(*ucg_op != NULL);
     ucg_op_params_t params;
-    params.field_mask = UCG_OP_PARAMS_FIELD_TYPE |
-                        UCG_OP_PARAMS_FIELD_USER_OP |
-                        UCG_OP_PARAMS_FIELD_USER_FUNC |
+    params.field_mask = UCG_OP_PARAMS_FIELD_TYPE | UCG_OP_PARAMS_FIELD_USER_OP | UCG_OP_PARAMS_FIELD_USER_FUNC |
                         UCG_OP_PARAMS_FIELD_COMMUTATIVE;
     params.type = type;
-    params.user_op = (void*)ompi_op;
+    params.user_op = (void *)ompi_op;
     params.user_func = mca_coll_ucg_op_reduce;
     params.commutative = ompi_op_is_commute(ompi_op);
     ucg_status_t status = ucg_op_init(&params, *ucg_op, UCG_OP_SIZE);
@@ -410,11 +458,9 @@ static int mca_coll_ucg_type_adapt_op(ompi_op_t *ompi_op,
 int mca_coll_ucg_conv_pool_init(void)
 {
     OBJ_CONSTRUCT(&mca_coll_ucg_conv_pool.flist, opal_free_list_t);
-    int rc = opal_free_list_init(&mca_coll_ucg_conv_pool.flist, sizeof(mca_coll_ucg_convertor_t),
-                                 opal_cache_line_size, OBJ_CLASS(mca_coll_ucg_convertor_t),
-                                 0, 0,
-                                 128, INT_MAX, 128,
-                                 NULL, 0, NULL, NULL, NULL);
+    int rc = opal_free_list_init(&mca_coll_ucg_conv_pool.flist, sizeof(mca_coll_ucg_convertor_t), opal_cache_line_size,
+                                 OBJ_CLASS(mca_coll_ucg_convertor_t), 0, 0, 128, INT_MAX, 128, NULL, 0, NULL, NULL,
+                                 NULL);
     return rc == OPAL_SUCCESS ? OMPI_SUCCESS : OMPI_ERROR;
 }
 
@@ -448,8 +494,7 @@ void mca_coll_ucg_type_cleanup(void)
     return;
 }
 
-int mca_coll_ucg_type_adapt(ompi_datatype_t *ompi_dt, ucg_dt_h *ucg_dt,
-                            ompi_op_t *ompi_op, ucg_op_h *ucg_op)
+int mca_coll_ucg_type_adapt(ompi_datatype_t *ompi_dt, ucg_dt_h *ucg_dt, ompi_op_t *ompi_op, ucg_op_h *ucg_op)
 {
     if (!ompi_datatype_is_valid(ompi_dt)) {
         return OMPI_ERR_NOT_SUPPORTED;
