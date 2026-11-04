@@ -25,14 +25,14 @@
 BEGIN_C_DECLS
 
 #ifndef container_of
-#define container_of(ptr, type, member) ((type *)(((char *)(ptr)) - offsetof(type, member)))
+    #define container_of(ptr, type, member) ((type *) (((char *) (ptr)) - offsetof(type, member)))
 #endif
 
 #if OMPI_MAJOR_VERSION < 5
-#define PMIX_NODEID OPAL_PMIX_NODEID
-#define PMIX_UINT32 OPAL_UINT32
-#define PMIX_LOCALITY_STRING OPAL_PMIX_LOCALITY_STRING
-#define PMIX_STRING OPAL_STRING
+    #define PMIX_NODEID             OPAL_PMIX_NODEID
+    #define PMIX_UINT32             OPAL_UINT32
+    #define PMIX_LOCALITY_STRING    OPAL_PMIX_LOCALITY_STRING
+    #define PMIX_STRING             OPAL_STRING
 #endif
 
 typedef enum {
@@ -67,28 +67,28 @@ typedef struct {
     bool initialized;
 
     /** MCA parameter */
-    int priority;                         /* Priority of this component */
-    int verbose;                          /* Verbose level of this component */
-    int max_rcache_size;                  /* Max size of request cache */
-    char *disable_coll;                   /* Disabled op receiver */
-    char *enable_coll;                    /* Enabled op receiver */
-    char *enable_coll_cache;              /* Enabled op cache receiver */
-    char *topology;                       /* Topology file path */
-    int npolls;                           /* test progress npolls */
-    int ucg_list[UCG_COLLECTIVE_OP_SIZE]; /* Collective op list */
+    int priority;               /* Priority of this component */
+    int verbose;                /* Verbose level of this component */
+    int max_rcache_size;        /* Max size of request cache */
+    char *disable_coll;         /* Disabled op receiver */
+    char *enable_coll;          /* Enabled op receiver */
+    char *enable_coll_cache;    /* Enabled op cache receiver */
+    char *topology;             /* Topology file path */
+    int npolls;                 /* test progress npolls */
+    int ucg_list[UCG_COLLECTIVE_OP_SIZE];  /* Collective op list */
 
     ucg_context_h ucg_context;
 
-    char **blacklist;       /**  disabled collective operations */
-    char **whitelist;       /**  enabled collective operations */
+    char **blacklist; /**  disabled collective operations */
+    char **whitelist; /**  enabled collective operations */
     char **coll_cache_list; /**  enabled cache for collective operations */
 } mca_coll_ucg_component_t;
 OMPI_MODULE_DECLSPEC extern mca_coll_ucg_component_t mca_coll_ucg_component;
 
 typedef struct {
-    mca_coll_base_module_t super;
-    ompi_communicator_t *comm;
-    ucg_group_h group;
+    mca_coll_base_module_t  super;
+    ompi_communicator_t    *comm;
+    ucg_group_h             group;
 
     /* blocking fallback */
     mca_coll_base_module_allreduce_fn_t previous_allreduce;
@@ -191,9 +191,6 @@ typedef struct {
 
     mca_coll_base_module_reduce_scatter_block_init_fn_t previous_reduce_scatter_block_init;
     mca_coll_base_module_t *previous_reduce_scatter_block_init_module;
-
-    mca_coll_base_module_neighbor_alltoallw_init_fn_t previous_neighbor_alltoallw_init;
-    mca_coll_base_module_t *previous_neighbor_alltoallw_init_module;
 } mca_coll_ucg_module_t;
 OBJ_CLASS_DECLARATION(mca_coll_ucg_module_t);
 
@@ -204,218 +201,294 @@ int mca_coll_ucg_init_once(void);
 void mca_coll_ucg_cleanup_once(void);
 
 /* allreduce */
-int mca_coll_ucg_allreduce(const void *sbuf, void *rbuf, int count, ompi_datatype_t *dtype, ompi_op_t *op,
+int mca_coll_ucg_allreduce(const void *sbuf, void *rbuf, int count,
+                           ompi_datatype_t *dtype, ompi_op_t *op,
                            ompi_communicator_t *comm, mca_coll_base_module_t *module);
 
-int mca_coll_ucg_allreduce_cache(const void *sbuf, void *rbuf, int count, ompi_datatype_t *dtype, ompi_op_t *op,
+int mca_coll_ucg_allreduce_cache(const void *sbuf, void *rbuf, int count,
+                                 ompi_datatype_t *dtype, ompi_op_t *op,
                                  ompi_communicator_t *comm, mca_coll_base_module_t *module);
 
-int mca_coll_ucg_iallreduce(const void *sbuf, void *rbuf, int count, ompi_datatype_t *datatype, ompi_op_t *op,
-                            ompi_communicator_t *comm, ompi_request_t **request, mca_coll_base_module_t *module);
+int mca_coll_ucg_iallreduce(const void *sbuf, void *rbuf, int count,
+                            ompi_datatype_t *datatype, ompi_op_t *op,
+                            ompi_communicator_t *comm, ompi_request_t **request,
+                            mca_coll_base_module_t *module);
 
-int mca_coll_ucg_iallreduce_cache(const void *sbuf, void *rbuf, int count, ompi_datatype_t *datatype, ompi_op_t *op,
-                                  ompi_communicator_t *comm, ompi_request_t **request, mca_coll_base_module_t *module);
+int mca_coll_ucg_iallreduce_cache(const void *sbuf, void *rbuf, int count,
+                                  ompi_datatype_t *datatype, ompi_op_t *op,
+                                  ompi_communicator_t *comm, ompi_request_t **request,
+                                  mca_coll_base_module_t *module);
 
-int mca_coll_ucg_allreduce_init(const void *sbuf, void *rbuf, int count, ompi_datatype_t *datatype, ompi_op_t *op,
-                                ompi_communicator_t *comm, ompi_info_t *info, ompi_request_t **request,
-                                mca_coll_base_module_t *module);
+int mca_coll_ucg_allreduce_init(const void *sbuf, void *rbuf, int count, ompi_datatype_t *datatype,
+                                ompi_op_t *op, ompi_communicator_t *comm, ompi_info_t *info,
+                                ompi_request_t **request, mca_coll_base_module_t *module);
 
 /* bcast */
-int mca_coll_ucg_bcast(void *buff, int count, ompi_datatype_t *datatype, int root, ompi_communicator_t *comm,
+int mca_coll_ucg_bcast(void *buff, int count, ompi_datatype_t *datatype,
+                       int root, ompi_communicator_t *comm,
                        mca_coll_base_module_t *module);
 
-int mca_coll_ucg_bcast_cache(void *buff, int count, ompi_datatype_t *datatype, int root, ompi_communicator_t *comm,
+int mca_coll_ucg_bcast_cache(void *buff, int count, ompi_datatype_t *datatype,
+                             int root, ompi_communicator_t *comm,
                              mca_coll_base_module_t *module);
 
-int mca_coll_ucg_ibcast(void *buffer, int count, MPI_Datatype datatype, int root, ompi_communicator_t *comm,
-                        ompi_request_t **request, mca_coll_base_module_t *module);
+int mca_coll_ucg_ibcast(void *buffer, int count, MPI_Datatype datatype, int root,
+                        ompi_communicator_t *comm, ompi_request_t **request,
+                        mca_coll_base_module_t *module);
 
-int mca_coll_ucg_ibcast_cache(void *buffer, int count, MPI_Datatype datatype, int root, ompi_communicator_t *comm,
-                              ompi_request_t **request, mca_coll_base_module_t *module);
+int mca_coll_ucg_ibcast_cache(void *buffer, int count, MPI_Datatype datatype, int root,
+                            ompi_communicator_t *comm, ompi_request_t **request,
+                              mca_coll_base_module_t *module);
 
-int mca_coll_ucg_bcast_init(void *buffer, int count, MPI_Datatype datatype, int root, ompi_communicator_t *comm,
-                            ompi_info_t *info, ompi_request_t **request, mca_coll_base_module_t *module);
+int mca_coll_ucg_bcast_init(void *buffer, int count, MPI_Datatype datatype, int root,
+                            ompi_communicator_t *comm, ompi_info_t *info,
+                            ompi_request_t **request, mca_coll_base_module_t *module);
 
 /* alltoallv */
-int mca_coll_ucg_alltoallv(const void *sbuf, const int *scounts, const int *sdispls, ompi_datatype_t *sdtype,
-                           void *rbuf, const int *rcounts, const int *rdispls, ompi_datatype_t *rdtype,
+int mca_coll_ucg_alltoallv(const void *sbuf, const int *scounts, const int *sdispls,
+                           ompi_datatype_t *sdtype, void *rbuf, const int *rcounts,
+                           const int *rdispls, ompi_datatype_t *rdtype,
                            ompi_communicator_t *comm, mca_coll_base_module_t *module);
 
-int mca_coll_ucg_alltoallv_cache(const void *sbuf, const int *scounts, const int *sdispls, ompi_datatype_t *sdtype,
-                                 void *rbuf, const int *rcounts, const int *rdispls, ompi_datatype_t *rdtype,
+int mca_coll_ucg_alltoallv_cache(const void *sbuf, const int *scounts, const int *sdispls,
+                                 ompi_datatype_t *sdtype, void *rbuf, const int *rcounts,
+                                 const int *rdispls, ompi_datatype_t *rdtype,
                                  ompi_communicator_t *comm, mca_coll_base_module_t *module);
 
-int mca_coll_ucg_ialltoallv(const void *sbuf, const int *scounts, const int *sdispls, ompi_datatype_t *sdtype,
-                            void *rbuf, const int *rcounts, const int *rdispls, ompi_datatype_t *rdtype,
-                            ompi_communicator_t *comm, ompi_request_t **request, mca_coll_base_module_t *module);
+int mca_coll_ucg_ialltoallv(const void *sbuf, const int *scounts, const int *sdispls,
+                           ompi_datatype_t *sdtype, void *rbuf, const int *rcounts,
+                           const int *rdispls, ompi_datatype_t *rdtype,
+                           ompi_communicator_t *comm, ompi_request_t **request,
+                           mca_coll_base_module_t *module);
 
-int mca_coll_ucg_ialltoallv_cache(const void *sbuf, const int *scounts, const int *sdispls, ompi_datatype_t *sdtype,
-                                  void *rbuf, const int *rcounts, const int *rdispls, ompi_datatype_t *rdtype,
-                                  ompi_communicator_t *comm, ompi_request_t **request, mca_coll_base_module_t *module);
+int mca_coll_ucg_ialltoallv_cache(const void *sbuf, const int *scounts, const int *sdispls,
+                                  ompi_datatype_t *sdtype, void *rbuf, const int *rcounts,
+                                  const int *rdispls, ompi_datatype_t *rdtype,
+                                  ompi_communicator_t *comm, ompi_request_t **request,
+                                  mca_coll_base_module_t *module);
 
-int mca_coll_ucg_alltoallv_init(const void *sbuf, const int *scounts, const int *sdispls, ompi_datatype_t *sdtype,
-                                void *rbuf, const int *rcounts, const int *rdispls, ompi_datatype_t *rdtype,
-                                ompi_communicator_t *comm, ompi_info_t *info, ompi_request_t **request,
-                                mca_coll_base_module_t *module);
+int mca_coll_ucg_alltoallv_init(const void *sbuf, const int *scounts, const int *sdispls,
+                                ompi_datatype_t *sdtype, void *rbuf, const int *rcounts,
+                                const int *rdispls, ompi_datatype_t *rdtype,
+                                ompi_communicator_t *comm, ompi_info_t *info,
+                                ompi_request_t **request, mca_coll_base_module_t *module);
 
 /* barrier */
 int mca_coll_ucg_barrier(ompi_communicator_t *comm, mca_coll_base_module_t *module);
 
 int mca_coll_ucg_barrier_cache(ompi_communicator_t *comm, mca_coll_base_module_t *module);
 
-int mca_coll_ucg_ibarrier(ompi_communicator_t *comm, ompi_request_t **request, mca_coll_base_module_t *module);
-
-int mca_coll_ucg_ibarrier_cache(ompi_communicator_t *comm, ompi_request_t **request, mca_coll_base_module_t *module);
-
-int mca_coll_ucg_barrier_init(ompi_communicator_t *comm, ompi_info_t *info, ompi_request_t **request,
-                              mca_coll_base_module_t *module);
-
-/* scatter */
-int mca_coll_ucg_scatter(const void *sbuf, const int scount, ompi_datatype_t *sdtype, void *rbuf, int rcount,
-                         ompi_datatype_t *rdtype, int root, ompi_communicator_t *comm, mca_coll_base_module_t *module);
-
-int mca_coll_ucg_scatter_cache(const void *sbuf, const int scount, ompi_datatype_t *sdtype, void *rbuf, int rcount,
-                               ompi_datatype_t *rdtype, int root, ompi_communicator_t *comm,
-                               mca_coll_base_module_t *module);
-
-int mca_coll_ucg_iscatter(const void *sbuf, const int scount, ompi_datatype_t *sdtype, void *rbuf, int rcount,
-                          ompi_datatype_t *rdtype, int root, ompi_communicator_t *comm, ompi_request_t **request,
+int mca_coll_ucg_ibarrier(ompi_communicator_t *comm, ompi_request_t **request,
                           mca_coll_base_module_t *module);
 
-int mca_coll_ucg_iscatter_cache(const void *sbuf, const int scount, ompi_datatype_t *sdtype, void *rbuf, int rcount,
-                                ompi_datatype_t *rdtype, int root, ompi_communicator_t *comm, ompi_request_t **request,
+int mca_coll_ucg_ibarrier_cache(ompi_communicator_t *comm, ompi_request_t **request,
                                 mca_coll_base_module_t *module);
 
-int mca_coll_ucg_scatter_init(const void *sbuf, const int scount, ompi_datatype_t *sdtype, void *rbuf, int rcount,
-                              ompi_datatype_t *rdtype, int root, ompi_communicator_t *comm, ompi_info_t *info,
+int mca_coll_ucg_barrier_init(ompi_communicator_t *comm, ompi_info_t *info,
+                              ompi_request_t **request, mca_coll_base_module_t *module);
+
+/* scatter */
+int mca_coll_ucg_scatter(const void *sbuf, const int scount, ompi_datatype_t *sdtype, 
+                         void *rbuf, int rcount, ompi_datatype_t *rdtype, int root,
+                         ompi_communicator_t *comm, mca_coll_base_module_t *module);
+
+int mca_coll_ucg_scatter_cache(const void *sbuf, const int scount, ompi_datatype_t *sdtype,
+                               void *rbuf, int rcount, ompi_datatype_t *rdtype,
+                               int root, ompi_communicator_t *comm,
+                               mca_coll_base_module_t *module);
+
+int mca_coll_ucg_iscatter(const void *sbuf, const int scount, ompi_datatype_t *sdtype,
+                          void *rbuf, int rcount, ompi_datatype_t *rdtype, int root,
+                          ompi_communicator_t *comm, ompi_request_t **request,
+                          mca_coll_base_module_t *module);
+
+int mca_coll_ucg_iscatter_cache(const void *sbuf, const int scount, ompi_datatype_t *sdtype,
+                                void *rbuf, int rcount, ompi_datatype_t *rdtype, int root,
+                                ompi_communicator_t *comm, ompi_request_t **request,
+                                mca_coll_base_module_t *module);
+
+int mca_coll_ucg_scatter_init(const void *sbuf, const int scount, ompi_datatype_t *sdtype,
+                              void *rbuf, int rcount, ompi_datatype_t *rdtype, int root,
+                              ompi_communicator_t *comm, ompi_info_t *info,
                               ompi_request_t **request, mca_coll_base_module_t *module);
 
 /* scatterv */
-int mca_coll_ucg_scatterv(const void *sbuf, const int *scounts, const int *disps, ompi_datatype_t *sdtype, void *rbuf,
-                          int rcount, ompi_datatype_t *rdtype, int root, ompi_communicator_t *comm,
+int mca_coll_ucg_scatterv(const void *sbuf, const int *scounts, const int *disps,
+                          ompi_datatype_t *sdtype, void *rbuf, int rcount,
+                          ompi_datatype_t *rdtype, int root,
+                          ompi_communicator_t *comm,
                           mca_coll_base_module_t *module);
 
-int mca_coll_ucg_scatterv_cache(const void *sbuf, const int *scounts, const int *disps, ompi_datatype_t *sdtype,
-                                void *rbuf, int rcount, ompi_datatype_t *rdtype, int root, ompi_communicator_t *comm,
+int mca_coll_ucg_scatterv_cache(const void *sbuf, const int *scounts, const int *disps,
+                                ompi_datatype_t *sdtype, void *rbuf, int rcount,
+                                ompi_datatype_t *rdtype, int root,
+                                ompi_communicator_t *comm,
                                 mca_coll_base_module_t *module);
 
-int mca_coll_ucg_iscatterv(const void *sbuf, const int *scounts, const int *disps, ompi_datatype_t *sdtype, void *rbuf,
-                           int rcount, ompi_datatype_t *rdtype, int root, ompi_communicator_t *comm,
-                           ompi_request_t **request, mca_coll_base_module_t *module);
+int mca_coll_ucg_iscatterv(const void *sbuf, const int *scounts, const int *disps,
+                           ompi_datatype_t *sdtype, void *rbuf, int rcount,
+                           ompi_datatype_t *rdtype, int root,
+                           ompi_communicator_t *comm, ompi_request_t **request,
+                           mca_coll_base_module_t *module);
 
-int mca_coll_ucg_iscatterv_cache(const void *sbuf, const int *scounts, const int *disps, ompi_datatype_t *sdtype,
-                                 void *rbuf, int rcount, ompi_datatype_t *rdtype, int root, ompi_communicator_t *comm,
-                                 ompi_request_t **request, mca_coll_base_module_t *module);
-
-int mca_coll_ucg_scatterv_init(const void *sbuf, const int *scounts, const int *disps, ompi_datatype_t *sdtype,
-                               void *rbuf, int rcount, ompi_datatype_t *rdtype, int root, ompi_communicator_t *comm,
-                               ompi_info_t *info, ompi_request_t **request, mca_coll_base_module_t *module);
-/* gather */
-int mca_coll_ucg_gather(const void *sbuf, int sendcount, ompi_datatype_t *sdtype, void *rbuf, int recvcount,
-                        ompi_datatype_t *rdtype, int root, ompi_communicator_t *comm, mca_coll_base_module_t *module);
-
-int mca_coll_ucg_gather_cache(const void *sbuf, int sendcount, ompi_datatype_t *sdtype, void *rbuf, int recvcount,
-                              ompi_datatype_t *rdtype, int root, ompi_communicator_t *comm,
-                              mca_coll_base_module_t *module);
-
-int mca_coll_ucg_igather(const void *sbuf, int sendcount, ompi_datatype_t *sdtype, void *rbuf, int recvcount,
-                         ompi_datatype_t *rdtype, int root, ompi_communicator_t *comm, ompi_request_t **request,
-                         mca_coll_base_module_t *module);
-
-int mca_coll_ucg_igather_cache(const void *sbuf, int sendcount, ompi_datatype_t *sdtype, void *rbuf, int recvcount,
-                               ompi_datatype_t *rdtype, int root, ompi_communicator_t *comm, ompi_request_t **request,
-                               mca_coll_base_module_t *module);
-
-int mca_coll_ucg_gather_init(const void *sbuf, int sendcount, ompi_datatype_t *sdtype, void *rbuf, int recvcount,
-                             ompi_datatype_t *rdtype, int root, ompi_communicator_t *comm, ompi_info_t *info,
-                             ompi_request_t **request, mca_coll_base_module_t *module);
-
-/* gatherv */
-int mca_coll_ucg_gatherv(const void *sbuf, int sendcount, ompi_datatype_t *sdtype, void *rbuf, const int *recvcounts,
-                         const int *disps, ompi_datatype_t *rdtype, int root, ompi_communicator_t *comm,
-                         mca_coll_base_module_t *module);
-
-int mca_coll_ucg_gatherv_cache(const void *sbuf, int sendcount, ompi_datatype_t *sdtype, void *rbuf,
-                               const int *recvcounts, const int *disps, ompi_datatype_t *rdtype, int root,
-                               ompi_communicator_t *comm, mca_coll_base_module_t *module);
-
-int mca_coll_ucg_igatherv(const void *sbuf, int sendcount, ompi_datatype_t *sdtype, void *rbuf, const int *recvcounts,
-                          const int *disps, ompi_datatype_t *rdtype, int root, ompi_communicator_t *comm,
-                          ompi_request_t **request, mca_coll_base_module_t *module);
-
-int mca_coll_ucg_igatherv_cache(const void *sbuf, int sendcount, ompi_datatype_t *sdtype, void *rbuf,
-                                const int *recvcounts, const int *disps, ompi_datatype_t *rdtype, int root,
-                                ompi_communicator_t *comm, ompi_request_t **request, mca_coll_base_module_t *module);
-
-int mca_coll_ucg_gatherv_init(const void *sbuf, int sendcount, ompi_datatype_t *sdtype, void *rbuf,
-                              const int *recvcounts, const int *disps, ompi_datatype_t *rdtype, int root,
-                              ompi_communicator_t *comm, ompi_info_t *info, ompi_request_t **request,
-                              mca_coll_base_module_t *module);
-
-/* allgatherv */
-int mca_coll_ucg_allgatherv(const void *sbuf, int scount, ompi_datatype_t *sdtype, void *rbuf, const int *rcounts,
-                            const int *disps, ompi_datatype_t *rdtype, ompi_communicator_t *comm,
-                            mca_coll_base_module_t *module);
-
-int mca_coll_ucg_allgatherv_cache(const void *sbuf, int scount, ompi_datatype_t *sdtype, void *rbuf, const int *rcounts,
-                                  const int *disps, ompi_datatype_t *rdtype, ompi_communicator_t *comm,
-                                  mca_coll_base_module_t *module);
-
-int mca_coll_ucg_iallgatherv(const void *sbuf, int scount, ompi_datatype_t *sdtype, void *rbuf, const int *rcounts,
-                             const int *disps, ompi_datatype_t *rdtype, ompi_communicator_t *comm,
-                             ompi_request_t **request, mca_coll_base_module_t *module);
-
-int mca_coll_ucg_iallgatherv_cache(const void *sbuf, int scount, ompi_datatype_t *sdtype, void *rbuf,
-                                   const int *rcounts, const int *disps, ompi_datatype_t *rdtype,
-                                   ompi_communicator_t *comm, ompi_request_t **request, mca_coll_base_module_t *module);
-
-int mca_coll_ucg_allgatherv_init(const void *sbuf, int scount, ompi_datatype_t *sdtype, void *rbuf, const int *rcounts,
-                                 const int *disps, ompi_datatype_t *rdtype, ompi_communicator_t *comm,
-                                 ompi_info_t *info, ompi_request_t **request, mca_coll_base_module_t *module);
-
-/* reduce_scatter */
-int mca_coll_ucg_reduce_scatter(const void *sbuf, void *rbuf, const int *rcounts, ompi_datatype_t *dtype, ompi_op_t *op,
-                                ompi_communicator_t *comm, mca_coll_base_module_t *module);
-
-int mca_coll_ucg_reduce_scatter_cache(const void *sbuf, void *rbuf, const int *rcounts, ompi_datatype_t *dtype,
-                                      ompi_op_t *op, ompi_communicator_t *comm, mca_coll_base_module_t *module);
-
-int mca_coll_ucg_ireduce_scatter(const void *sbuf, void *rbuf, const int *rcounts, ompi_datatype_t *dtype,
-                                 ompi_op_t *op, ompi_communicator_t *comm, ompi_request_t **request,
+int mca_coll_ucg_iscatterv_cache(const void *sbuf, const int *scounts, const int *disps,
+                                 ompi_datatype_t *sdtype, void *rbuf, int rcount,
+                                 ompi_datatype_t *rdtype, int root,
+                                 ompi_communicator_t *comm, ompi_request_t **request,
                                  mca_coll_base_module_t *module);
 
-int mca_coll_ucg_ireduce_scatter_cache(const void *sbuf, void *rbuf, const int *rcounts, ompi_datatype_t *dtype,
-                                       ompi_op_t *op, ompi_communicator_t *comm, ompi_request_t **request,
-                                       mca_coll_base_module_t *module);
+int mca_coll_ucg_scatterv_init(const void *sbuf, const int *scounts, const int *disps,
+                               ompi_datatype_t *sdtype, void *rbuf, int rcount,
+                               ompi_datatype_t *rdtype, int root,
+                               ompi_communicator_t *comm, ompi_info_t *info,
+                               ompi_request_t **request, mca_coll_base_module_t *module);
+/* gather */
+int mca_coll_ucg_gather(const void *sbuf, int sendcount,
+                         ompi_datatype_t *sdtype, void *rbuf, int recvcount,
+                         ompi_datatype_t *rdtype, int root,
+                         ompi_communicator_t *comm,
+                         mca_coll_base_module_t *module);
 
-int mca_coll_ucg_reduce_scatter_init(const void *sbuf, void *rbuf, const int *rcounts, ompi_datatype_t *dtype,
-                                     ompi_op_t *op, ompi_communicator_t *comm, ompi_info_t *info,
-                                     ompi_request_t **request, mca_coll_base_module_t *module);
+int mca_coll_ucg_gather_cache(const void *sbuf, int sendcount,
+                              ompi_datatype_t *sdtype, void *rbuf, int recvcount,
+                              ompi_datatype_t *rdtype, int root,
+                              ompi_communicator_t *comm,
+                              mca_coll_base_module_t *module);
 
-int mca_coll_ucg_neighbor_alltoallw_init(const void *sbuf, const int *scounts, const MPI_Aint *sdispls,
-                                         ompi_datatype_t *const *sdtype, void *rbuf, const int *rcounts,
-                                         const MPI_Aint *rdispls, ompi_datatype_t *const *rdtype,
-                                         ompi_communicator_t *comm, ompi_info_t *info, ompi_request_t **request,
-                                         mca_coll_base_module_t *module);
+int mca_coll_ucg_igather(const void *sbuf, int sendcount,
+                         ompi_datatype_t *sdtype, void *rbuf, int recvcount,
+                         ompi_datatype_t *rdtype, int root,
+                         ompi_communicator_t *comm, ompi_request_t **request,
+                         mca_coll_base_module_t *module);
+
+int mca_coll_ucg_igather_cache(const void *sbuf, int sendcount,
+                               ompi_datatype_t *sdtype, void *rbuf, int recvcount,
+                               ompi_datatype_t *rdtype, int root,
+                               ompi_communicator_t *comm, ompi_request_t **request,
+                               mca_coll_base_module_t *module);
+
+int mca_coll_ucg_gather_init(const void *sbuf, int sendcount,
+                              ompi_datatype_t *sdtype, void *rbuf, int recvcount,
+                              ompi_datatype_t *rdtype, int root,
+                              ompi_communicator_t *comm, ompi_info_t *info,
+                              ompi_request_t **request, mca_coll_base_module_t *module);
+
+/* gatherv */
+int mca_coll_ucg_gatherv(const void *sbuf, int sendcount,
+                         ompi_datatype_t *sdtype, void *rbuf, const int *recvcounts,
+                         const int *disps,
+                         ompi_datatype_t *rdtype, int root,
+                         ompi_communicator_t *comm,
+                         mca_coll_base_module_t *module);
+
+int mca_coll_ucg_gatherv_cache(const void *sbuf, int sendcount,
+                               ompi_datatype_t *sdtype, void *rbuf, const int *recvcounts,
+                               const int *disps,
+                               ompi_datatype_t *rdtype, int root,
+                               ompi_communicator_t *comm,
+                               mca_coll_base_module_t *module);
+
+int mca_coll_ucg_igatherv(const void *sbuf, int sendcount,
+                          ompi_datatype_t *sdtype, void *rbuf, const int *recvcounts,
+                          const int *disps,
+                          ompi_datatype_t *rdtype, int root,
+                          ompi_communicator_t *comm, ompi_request_t **request,
+                          mca_coll_base_module_t *module);
+
+int mca_coll_ucg_igatherv_cache(const void *sbuf, int sendcount,
+                                ompi_datatype_t *sdtype, void *rbuf, const int *recvcounts,
+                                const int *disps,
+                                ompi_datatype_t *rdtype, int root,
+                                ompi_communicator_t *comm, ompi_request_t **request,
+                                mca_coll_base_module_t *module);
+
+int mca_coll_ucg_gatherv_init(const void *sbuf, int sendcount,
+                              ompi_datatype_t *sdtype, void *rbuf, const int *recvcounts,
+                              const int *disps,
+                              ompi_datatype_t *rdtype, int root,
+                              ompi_communicator_t *comm, ompi_info_t *info,
+                              ompi_request_t **request, mca_coll_base_module_t *module);
+
+/* allgatherv */
+int mca_coll_ucg_allgatherv(const void *sbuf, int scount, ompi_datatype_t *sdtype,
+                            void *rbuf, const int *rcounts, const int *disps,
+                            ompi_datatype_t *rdtype, ompi_communicator_t *comm,
+                            mca_coll_base_module_t *module);
+
+int mca_coll_ucg_allgatherv_cache(const void *sbuf, int scount, ompi_datatype_t *sdtype,
+                                  void *rbuf, const int *rcounts, const int *disps,
+                                  ompi_datatype_t *rdtype, ompi_communicator_t *comm,
+                                  mca_coll_base_module_t *module);
+
+int mca_coll_ucg_iallgatherv(const void *sbuf, int scount, ompi_datatype_t *sdtype,
+                             void *rbuf, const int *rcounts, const int *disps,
+                             ompi_datatype_t *rdtype, ompi_communicator_t *comm,
+                             ompi_request_t **request, mca_coll_base_module_t *module);
+
+int mca_coll_ucg_iallgatherv_cache(const void *sbuf, int scount, ompi_datatype_t *sdtype,
+                                   void *rbuf, const int *rcounts, const int *disps,
+                                   ompi_datatype_t *rdtype, ompi_communicator_t *comm,
+                                   ompi_request_t **request, mca_coll_base_module_t *module);
+
+int mca_coll_ucg_allgatherv_init(const void *sbuf, int scount, ompi_datatype_t *sdtype,
+                                 void *rbuf, const int *rcounts, const int *disps,
+                                 ompi_datatype_t *rdtype, ompi_communicator_t *comm,
+                                 ompi_info_t *info, ompi_request_t **request,
+                                 mca_coll_base_module_t *module);
+
+/* reduce_scatter */
+int mca_coll_ucg_reduce_scatter(const void *sbuf, void *rbuf, const int *rcounts, 
+                                ompi_datatype_t *dtype, ompi_op_t *op,
+                                ompi_communicator_t *comm,
+                                mca_coll_base_module_t *module);
+
+int mca_coll_ucg_reduce_scatter_cache(const void *sbuf, void *rbuf, const int *rcounts, 
+                                      ompi_datatype_t *dtype, ompi_op_t *op,
+                                      ompi_communicator_t *comm,
+                                      mca_coll_base_module_t *module);
+
+int mca_coll_ucg_ireduce_scatter(const void *sbuf, void *rbuf, const int *rcounts, 
+                                 ompi_datatype_t *dtype, ompi_op_t *op,
+                                 ompi_communicator_t *comm,
+                                 ompi_request_t **request, mca_coll_base_module_t *module);
+
+int mca_coll_ucg_ireduce_scatter_cache(const void *sbuf, void *rbuf, const int *rcounts, 
+                                       ompi_datatype_t *dtype, ompi_op_t *op,
+                                       ompi_communicator_t *comm,
+                                       ompi_request_t **request, mca_coll_base_module_t *module);
+
+int mca_coll_ucg_reduce_scatter_init(const void *sbuf, void *rbuf, const int *rcounts, 
+                                     ompi_datatype_t *dtype, ompi_op_t *op,
+                                     ompi_communicator_t *comm,
+                                     ompi_info_t *info, ompi_request_t **request,
+                                     mca_coll_base_module_t *module);
 
 /* reduce_scatter_block */
-int mca_coll_ucg_reduce_scatter_block(const void *sbuf, void *rbuf, int rcount, ompi_datatype_t *dtype, ompi_op_t *op,
-                                      ompi_communicator_t *comm, mca_coll_base_module_t *module);
+int mca_coll_ucg_reduce_scatter_block(const void *sbuf, void *rbuf, int rcount, 
+                                ompi_datatype_t *dtype, ompi_op_t *op,
+                                ompi_communicator_t *comm,
+                                mca_coll_base_module_t *module);
 
-int mca_coll_ucg_reduce_scatter_block_cache(const void *sbuf, void *rbuf, int rcount, ompi_datatype_t *dtype,
-                                            ompi_op_t *op, ompi_communicator_t *comm, mca_coll_base_module_t *module);
+int mca_coll_ucg_reduce_scatter_block_cache(const void *sbuf, void *rbuf, int rcount, 
+                                      ompi_datatype_t *dtype, ompi_op_t *op,
+                                      ompi_communicator_t *comm,
+                                      mca_coll_base_module_t *module);
 
-int mca_coll_ucg_ireduce_scatter_block(const void *sbuf, void *rbuf, int rcount, ompi_datatype_t *dtype, ompi_op_t *op,
-                                       ompi_communicator_t *comm, ompi_request_t **request,
-                                       mca_coll_base_module_t *module);
+int mca_coll_ucg_ireduce_scatter_block(const void *sbuf, void *rbuf, int rcount, 
+                                 ompi_datatype_t *dtype, ompi_op_t *op,
+                                 ompi_communicator_t *comm,
+                                 ompi_request_t **request, mca_coll_base_module_t *module);
 
-int mca_coll_ucg_ireduce_scatter_block_cache(const void *sbuf, void *rbuf, int rcount, ompi_datatype_t *dtype,
-                                             ompi_op_t *op, ompi_communicator_t *comm, ompi_request_t **request,
-                                             mca_coll_base_module_t *module);
+int mca_coll_ucg_ireduce_scatter_block_cache(const void *sbuf, void *rbuf, int rcount, 
+                                       ompi_datatype_t *dtype, ompi_op_t *op,
+                                       ompi_communicator_t *comm,
+                                       ompi_request_t **request, mca_coll_base_module_t *module);
 
-int mca_coll_ucg_reduce_scatter_block_init(const void *sbuf, void *rbuf, int rcount, ompi_datatype_t *dtype,
-                                           ompi_op_t *op, ompi_communicator_t *comm, ompi_info_t *info,
-                                           ompi_request_t **request, mca_coll_base_module_t *module);
+int mca_coll_ucg_reduce_scatter_block_init(const void *sbuf, void *rbuf, int rcount, 
+                                     ompi_datatype_t *dtype, ompi_op_t *op,
+                                     ompi_communicator_t *comm,
+                                     ompi_info_t *info, ompi_request_t **request,
+                                     mca_coll_base_module_t *module);
 
 END_C_DECLS
 #endif //MCA_COLL_UCG_H

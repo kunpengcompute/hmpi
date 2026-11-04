@@ -17,147 +17,44 @@
 #include "ompi/mca/pml/pml.h"
 #include "ompi/mca/pml/ucx/pml_ucx.h"
 #include "opal/util/argv.h"
-#include "ompi/mca/topo/base/base.h"
-#include "ompi/mca/coll/base/coll_base_topo.h"
 
 /* Ensure coll ucg can be dlopened if global var "ompi_pml_ucx" is not existed*/
 mca_pml_ucx_module_t ompi_pml_ucx __attribute__((weak));
 
-#define MCA_COLL_UCG_SET_HANDLER(_api)                   \
-    if (mca_coll_ucg_is_api_enable(#_api)) {             \
-        module->super.coll_##_api = mca_coll_ucg_##_api; \
+#define MCA_COLL_UCG_SET_HANDLER(_api) \
+    if (mca_coll_ucg_is_api_enable(#_api)) { \
+        module->super.coll_ ## _api = mca_coll_ucg_ ## _api;\
     }
 
-#define MCA_COLL_UCG_SET_CACHE_HANDLER(_api)                     \
-    if (mca_coll_ucg_is_api_enable(#_api)) {                     \
-        module->super.coll_##_api = mca_coll_ucg_##_api##_cache; \
+#define MCA_COLL_UCG_SET_CACHE_HANDLER(_api) \
+    if (mca_coll_ucg_is_api_enable(#_api)) { \
+         module->super.coll_ ## _api = mca_coll_ucg_ ## _api ## _cache; \
     }
 
-#define MCA_COLL_UCG_CHECK_AND_SET_CACHE_HANDLER(_api)                                             \
-    if (mca_coll_ucg_is_api_enable(#_api)) {                                                       \
+#define MCA_COLL_UCG_CHECK_AND_SET_CACHE_HANDLER(_api) \
+    if (mca_coll_ucg_is_api_enable(#_api)) { \
         if (mca_coll_ucg_component.max_rcache_size > 0 && mca_check_ucg_fun_cache_enable(#_api)) { \
-            module->super.coll_##_api = mca_coll_ucg_##_api##_cache;                               \
-        } else {                                                                                   \
-            module->super.coll_##_api = mca_coll_ucg_##_api;                                       \
-        }                                                                                          \
+            module->super.coll_ ## _api = mca_coll_ucg_ ## _api ## _cache; \
+        } else {\
+            module->super.coll_ ## _api = mca_coll_ucg_ ## _api;\
+        } \
     }
 
-#define MCA_COLL_UCG_SAVE_FALLBACK(_api)                                           \
-    do {                                                                           \
-        ucg_module->previous_##_api = comm->c_coll->coll_##_api;                   \
-        ucg_module->previous_##_api##_module = comm->c_coll->coll_##_api##_module; \
-        if (!comm->c_coll->coll_##_api || !comm->c_coll->coll_##_api##_module) {   \
-            return OMPI_ERROR;                                                     \
-        }                                                                          \
-        OBJ_RETAIN(ucg_module->previous_##_api##_module);                          \
-    } while (0)
+#define MCA_COLL_UCG_SAVE_FALLBACK(_api) \
+    do {\
+        ucg_module->previous_ ## _api            = comm->c_coll->coll_ ## _api;\
+        ucg_module->previous_ ## _api ## _module = comm->c_coll->coll_ ## _api ## _module;\
+        if (!comm->c_coll->coll_ ## _api || !comm->c_coll->coll_ ## _api ## _module) {\
+            return OMPI_ERROR;\
+        }\
+        OBJ_RETAIN(ucg_module->previous_ ## _api ## _module);\
+    } while(0)
 
-#define MCA_COLL_UCG_FREE_FALLBACK(_api)                   \
-    if (NULL != ucg_module->previous_##_api##_module) {    \
-        OBJ_RELEASE(ucg_module->previous_##_api##_module); \
+#define MCA_COLL_UCG_FREE_FALLBACK(_api) \
+    if (NULL != ucg_module->previous_ ## _api ## _module) { \
+        OBJ_RELEASE(ucg_module->previous_ ## _api ## _module); \
     }
 
-static int mca_coll_ucg_comm_neighbors_count(ompi_communicator_t *comm, int *in_deg, int *out_deg)
-{
-    int ret = OMPI_SUCCESS;
-    if (OMPI_COMM_IS_CART(comm)) {
-        const int ndims = comm->c_topo->mtc.cart->ndims;
-        *in_deg = 2 * ndims;
-        *out_deg = 2 * ndims;
-    } else if (OMPI_COMM_IS_GRAPH(comm)) {
-        int rank = ompi_comm_rank(comm);
-        int count = 0;
-        ret = mca_topo_base_graph_neighbors_count(comm, rank, &count);
-        *in_deg = count;
-        *out_deg = count;
-    } else if (OMPI_COMM_IS_DIST_GRAPH(comm)) {
-        /* graph */
-        *in_deg = comm->c_topo->mtc.dist_graph->indegree;
-        *out_deg = comm->c_topo->mtc.dist_graph->outdegree;
-    } else {
-        UCG_DEBUG("unsupported communicator topology type");
-        return OMPI_ERR_BAD_PARAM;
-    }
-    return ret;
-}
-
-static int mca_coll_ucg_comm_neighbors(ompi_communicator_t *comm, int **sources, int *src_cnt, int **dests,
-                                       int *dst_cnt)
-{
-    int in_deg = 0;
-    int out_deg = 0;
-    int ret;
-    *sources = NULL;
-    *dests = NULL;
-    *src_cnt = 0;
-    *dst_cnt = 0;
-    ret = mca_coll_ucg_comm_neighbors_count(comm, &in_deg, &out_deg);
-    if (ret != OMPI_SUCCESS) {
-        goto cleanup;
-    }
-    *src_cnt = in_deg;
-    *dst_cnt = out_deg;
-    if (in_deg > 0) {
-        *sources = (int *)malloc((size_t)in_deg * sizeof(**sources));
-        if (*sources == NULL) {
-            ret = OMPI_ERR_OUT_OF_RESOURCE;
-            goto cleanup;
-        }
-    }
-    if (out_deg > 0) {
-        *dests = (int *)malloc((size_t)out_deg * sizeof(**dests));
-        if (*dests == NULL) {
-            ret = OMPI_ERR_OUT_OF_RESOURCE;
-            goto cleanup;
-        }
-    }
-    if (OMPI_COMM_IS_CART(comm)) {
-        if (in_deg != out_deg) {
-            UCG_DEBUG("cartesian communicator with asymmetric degrees");
-            ret = OMPI_ERR_BAD_PARAM;
-            goto cleanup;
-        }
-        const int ndims = comm->c_topo->mtc.cart->ndims;
-        int idx = 0;
-        for (int dim = 0; dim < ndims; ++dim) {
-            int right_peer = MPI_PROC_NULL;
-            int left_peer = MPI_PROC_NULL;
-            ret = mca_topo_base_cart_shift(comm, dim, 1, &right_peer, &left_peer);
-            if (ret != OMPI_SUCCESS)
-                goto cleanup;
-            (*sources)[idx] = right_peer;
-            (*dests)[idx] = right_peer;
-            ++idx;
-            (*sources)[idx] = left_peer;
-            (*dests)[idx] = left_peer;
-            ++idx;
-        }
-    } else if (OMPI_COMM_IS_GRAPH(comm)) {
-        ret = mca_topo_base_graph_neighbors(comm, ompi_comm_rank(comm), in_deg, *sources);
-        if (ret != OMPI_SUCCESS)
-            goto cleanup;
-        (void)memcpy(*dests, *sources, (size_t)in_deg * sizeof(**sources));
-    } else if (OMPI_COMM_IS_DIST_GRAPH(comm)) {
-        ret =
-            mca_topo_base_dist_graph_neighbors(comm, in_deg, *sources, MPI_UNWEIGHTED, out_deg, *dests, MPI_UNWEIGHTED);
-        if (ret != OMPI_SUCCESS)
-            goto cleanup;
-    } else {
-        UCG_DEBUG("unexpected topology after count check");
-        ret = OMPI_ERR_BAD_PARAM;
-        goto cleanup;
-    }
-cleanup:
-    if (ret != OMPI_SUCCESS) {
-        free(*sources);
-        free(*dests);
-        *sources = NULL;
-        *dests = NULL;
-        *src_cnt = 0;
-        *dst_cnt = 0;
-    }
-    return ret;
-}
 
 static int mca_coll_ucg_progress(void)
 {
@@ -165,24 +62,20 @@ static int mca_coll_ucg_progress(void)
     return OMPI_SUCCESS;
 }
 
-static ucg_status_t mca_coll_ucg_resolved_func(void *group, int *indegree, int *outdegree, int **srcs, int **dsts,
-                                               uint32_t *comm_type)
-{
-    ompi_communicator_t *comm = (ompi_communicator_t *)group;
-    *comm_type = comm->c_flags;
-    int res = mca_coll_ucg_comm_neighbors(comm, srcs, indegree, dsts, outdegree);
-    return (res == OMPI_SUCCESS) ? UCG_OK : UCG_ERR_NO_RESOURCE;
-}
-
 static ucg_status_t mca_coll_ucg_oob_allgather(const void *sendbuf, void *recvbuf, int count, void *group)
 {
     int rc;
     ompi_communicator_t *comm = (ompi_communicator_t *)group;
-    rc = ompi_coll_base_allgather_intra_bruck(sendbuf, count, MPI_CHAR, recvbuf, count, MPI_CHAR, comm, NULL);
+    rc = ompi_coll_base_allgather_intra_bruck(sendbuf, count, MPI_CHAR,
+                                              recvbuf, count, MPI_CHAR,
+                                              comm, NULL);
     return (rc == OMPI_SUCCESS) ? UCG_OK : UCG_ERR_NO_RESOURCE;
 }
 
-static ucg_status_t mca_coll_ucg_oob_blocking_allgather(const void *sendbuf, void *recvbuf, int count, void *group)
+static ucg_status_t mca_coll_ucg_oob_blocking_allgather(const void *sendbuf,
+                                                        void *recvbuf,
+                                                        int count,
+                                                        void *group)
 {
     int rc, i;
     ompi_communicator_t *comm = (ompi_communicator_t *)group;
@@ -195,8 +88,9 @@ static ucg_status_t mca_coll_ucg_oob_blocking_allgather(const void *sendbuf, voi
             if (i == 0) {
                 memcpy(recvbuf, sendbuf, count);
             } else {
-                rc = MCA_PML_CALL(recv((char *)recvbuf + i * count, count, MPI_CHAR, i, MCA_COLL_BASE_TAG_ALLGATHER,
-                                       comm, MPI_STATUS_IGNORE));
+                rc = MCA_PML_CALL(recv((char *)recvbuf + i * count, count, MPI_CHAR, i,
+                                       MCA_COLL_BASE_TAG_ALLGATHER, comm,
+                                       MPI_STATUS_IGNORE));
                 if (rc != OMPI_SUCCESS) {
                     goto out;
                 }
@@ -205,7 +99,8 @@ static ucg_status_t mca_coll_ucg_oob_blocking_allgather(const void *sendbuf, voi
 
         //bcast recvbuf to all rank
         for (i = 1; i < size; i++) {
-            rc = MCA_PML_CALL(send((char *)recvbuf, size * count, MPI_CHAR, i, MCA_COLL_BASE_TAG_ALLGATHER,
+            rc = MCA_PML_CALL(send((char *)recvbuf, size * count, MPI_CHAR, i,
+                                   MCA_COLL_BASE_TAG_ALLGATHER,
                                    MCA_PML_BASE_SEND_STANDARD, comm));
             if (rc != OMPI_SUCCESS) {
                 goto out;
@@ -213,15 +108,16 @@ static ucg_status_t mca_coll_ucg_oob_blocking_allgather(const void *sendbuf, voi
         }
     } else {
         //send data to rank 0
-        rc = MCA_PML_CALL(
-            send((char *)sendbuf, count, MPI_CHAR, 0, MCA_COLL_BASE_TAG_ALLGATHER, MCA_PML_BASE_SEND_STANDARD, comm));
+        rc = MCA_PML_CALL(send((char *)sendbuf, count, MPI_CHAR, 0, MCA_COLL_BASE_TAG_ALLGATHER,
+                               MCA_PML_BASE_SEND_STANDARD, comm));
         if (rc != OMPI_SUCCESS) {
             goto out;
         }
 
         //recv gather data from rank 0
-        rc = MCA_PML_CALL(
-            recv((char *)recvbuf, size * count, MPI_CHAR, 0, MCA_COLL_BASE_TAG_ALLGATHER, comm, MPI_STATUS_IGNORE));
+        rc = MCA_PML_CALL(recv((char *)recvbuf, size * count, MPI_CHAR, 0,
+                               MCA_COLL_BASE_TAG_ALLGATHER, comm,
+                               MPI_STATUS_IGNORE));
         if (rc != OMPI_SUCCESS) {
             goto out;
         }
@@ -249,7 +145,7 @@ static ucg_status_t mca_coll_ucg_get_proc_info(ucg_rank_t rank, ucg_proc_info_t 
     int rc;
     uint32_t proc_size;
     opal_process_name_t proc_name = {.vpid = rank, .jobid = OMPI_PROC_MY_NAME->jobid};
-    OPAL_MODEX_RECV_STRING(rc, rank_addr_identify, &proc_name, (void **)proc, &proc_size);
+    OPAL_MODEX_RECV_STRING(rc, rank_addr_identify, &proc_name, (void**)proc, &proc_size);
     if (rc != OPAL_SUCCESS) {
         return UCG_ERR_NOT_FOUND;
     }
@@ -258,9 +154,9 @@ static ucg_status_t mca_coll_ucg_get_proc_info(ucg_rank_t rank, ucg_proc_info_t 
 
 static int mca_coll_ucg_get_world_rank(void *arg, int rank)
 {
-    ompi_communicator_t *comm = (ompi_communicator_t *)arg;
+    ompi_communicator_t* comm = (ompi_communicator_t*)arg;
     ompi_proc_t *proc = ompi_comm_peer_lookup(comm, rank);
-    return ((ompi_process_name_t *)&proc->super.proc_name)->vpid;
+    return ((ompi_process_name_t*)&proc->super.proc_name)->vpid;
 }
 
 /* mca_coll_ucg_fill_oob_group is used in ucg_init */
@@ -275,16 +171,20 @@ static void mca_coll_ucg_fill_oob_group(ucg_oob_group_t *oob_group)
 /* mca_coll_ucg_fill_group_oob_group is used in ucg_group_create.
  * If ompi_mpi_thread_multiple is true, ompi_sync_wait_mt will be nested
  * called which will cause the program hangs. */
-static void mca_coll_ucg_fill_group_oob_group(ucg_oob_group_t *oob_group, ompi_communicator_t *comm)
+static void mca_coll_ucg_fill_group_oob_group(ucg_oob_group_t *oob_group,
+                                              ompi_communicator_t *comm)
 {
-    oob_group->allgather = ompi_mpi_thread_multiple ? mca_coll_ucg_oob_blocking_allgather : mca_coll_ucg_oob_allgather;
+    oob_group->allgather = ompi_mpi_thread_multiple ?
+                           mca_coll_ucg_oob_blocking_allgather :
+                           mca_coll_ucg_oob_allgather;
     oob_group->myrank = (ucg_rank_t)ompi_comm_rank(comm);
     oob_group->size = (uint32_t)ompi_comm_size(comm);
     oob_group->group = (void *)comm;
     return;
 }
 
-static void mca_coll_ucg_fill_rank_map(ucg_rank_map_t *rank_map, ompi_communicator_t *comm)
+static void mca_coll_ucg_fill_rank_map(ucg_rank_map_t *rank_map,
+                                       ompi_communicator_t *comm)
 {
     rank_map->size = (uint32_t)ompi_comm_size(comm);
     if (comm == &ompi_mpi_comm_world.comm) {
@@ -297,20 +197,13 @@ static void mca_coll_ucg_fill_rank_map(ucg_rank_map_t *rank_map, ompi_communicat
     return;
 }
 
-static void mca_coll_ucg_fill_resolved_comm(ucg_resolved_comm_t *resolved_comm, ompi_communicator_t *comm)
-{
-    resolved_comm->group = (void *)comm;
-    resolved_comm->resolved_func = mca_coll_ucg_resolved_func;
-    return;
-}
-
 static void *mca_coll_ucg_get_ucp_ep(void *arg, void *oob_group, int rank)
 {
-    ompi_communicator_t *comm = (ompi_communicator_t *)oob_group;
+    ompi_communicator_t *comm = (ompi_communicator_t*)oob_group;
     ompi_proc_t *proc = ompi_comm_peer_lookup(comm, rank);
     ucp_ep_h ep = proc->proc_endpoints[OMPI_PROC_ENDPOINT_TAG_PML];
     if (OPAL_LIKELY(ep != NULL)) {
-        return (void *)ep;
+        return (void*)ep;
     }
 
     const int nprocs = 1;
@@ -319,17 +212,17 @@ static void *mca_coll_ucg_get_ucp_ep(void *arg, void *oob_group, int rank)
         return NULL;
     }
 
-    return (void *)ompi_comm_peer_lookup(comm, rank)->proc_endpoints[OMPI_PROC_ENDPOINT_TAG_PML];
+    return (void*)ompi_comm_peer_lookup(comm, rank)->proc_endpoints[OMPI_PROC_ENDPOINT_TAG_PML];
 }
 
 static void *mca_coll_ucg_get_ucp_worker(void *arg)
 {
-    return (void *)ompi_pml_ucx.ucp_worker;
+    return (void*)ompi_pml_ucx.ucp_worker;
 }
 
 static void *mca_coll_ucg_get_ucp_context(void *arg)
 {
-    return (void *)ompi_pml_ucx.ucp_context;
+    return (void*)ompi_pml_ucx.ucp_context;
 }
 
 static int mca_coll_ucg_init(void)
@@ -338,10 +231,12 @@ static int mca_coll_ucg_init(void)
     ucg_status_t status;
     ucg_config_h config;
 
-    ucg_global_params_t global_params = {.field_mask = UCG_GLOBAL_PARAMS_FIELD_OOB_RESOURCE,
-                                         .oob_resource.get_ucp_ep = mca_coll_ucg_get_ucp_ep,
-                                         .oob_resource.get_ucp_worker = mca_coll_ucg_get_ucp_worker,
-                                         .oob_resource.get_ucp_context = mca_coll_ucg_get_ucp_context};
+    ucg_global_params_t global_params = {
+        .field_mask = UCG_GLOBAL_PARAMS_FIELD_OOB_RESOURCE,
+        .oob_resource.get_ucp_ep = mca_coll_ucg_get_ucp_ep,
+        .oob_resource.get_ucp_worker = mca_coll_ucg_get_ucp_worker,
+        .oob_resource.get_ucp_context = mca_coll_ucg_get_ucp_context
+    };
 
     status = ucg_global_init(&global_params);
     if (status != UCG_OK) {
@@ -357,7 +252,9 @@ static int mca_coll_ucg_init(void)
     }
 
     ucg_params_t params;
-    params.field_mask = UCG_PARAMS_FIELD_OOB_GROUP | UCG_PARAMS_FIELD_THREAD_MODE | UCG_PARAMS_FIELD_PROC_INFO_CB;
+    params.field_mask = UCG_PARAMS_FIELD_OOB_GROUP |
+                        UCG_PARAMS_FIELD_THREAD_MODE |
+                        UCG_PARAMS_FIELD_PROC_INFO_CB;
     mca_coll_ucg_fill_oob_group(&params.oob_group);
     params.get_proc_info = mca_coll_ucg_get_proc_info;
     params.thread_mode = ompi_mpi_thread_multiple ? UCG_THREAD_MODE_MULTI : UCG_THREAD_MODE_SINGLE;
@@ -421,7 +318,7 @@ int mca_coll_ucg_init_once()
     char *disable_list = "gather,igather,gatherv,igatherv,scatter,iscatter";
     char *enable_list = "gather,igather,gatherv,igatherv,scatter,iscatter,scatterv,iscatterv,iallgatherv";
     unsigned long long cpu_id;
-    __asm__ volatile("mrs %0, MIDR_EL1" : "=r"(cpu_id));
+    __asm__ volatile ("mrs %0, MIDR_EL1":"=r"(cpu_id));
     unsigned long long vendor = (cpu_id >> 0x18) & 0xFF;
     unsigned long long part_id = (cpu_id >> 0x4) & 0xFFF;
     if (!((vendor == 0x48) && (part_id == 0xD22))) {
@@ -443,7 +340,7 @@ int mca_coll_ucg_init_once()
             cm->priority = 90;
             cm->whitelist = opal_argv_split(cm->enable_coll, ',');
         } else {
-            if (orte_process_info.num_procs >= 8192) { // 8192=512*16
+            if (orte_process_info.num_procs >= 8192) {  // 8192=512*16
                 cm->priority = 90;
                 cm->whitelist = opal_argv_split(enable_list, ',');
             }
@@ -506,7 +403,8 @@ void mca_coll_ucg_cleanup_once(void)
     return;
 }
 
-static int mca_coll_ucg_save_fallback(mca_coll_ucg_module_t *ucg_module, ompi_communicator_t *comm)
+static int mca_coll_ucg_save_fallback(mca_coll_ucg_module_t *ucg_module,
+                                      ompi_communicator_t *comm)
 {
     MCA_COLL_UCG_SAVE_FALLBACK(allreduce);
     MCA_COLL_UCG_SAVE_FALLBACK(bcast);
@@ -538,12 +436,11 @@ static int mca_coll_ucg_save_fallback(mca_coll_ucg_module_t *ucg_module, ompi_co
     MCA_COLL_UCG_SAVE_FALLBACK(alltoallv_init);
     MCA_COLL_UCG_SAVE_FALLBACK(scatter_init);
     MCA_COLL_UCG_SAVE_FALLBACK(scatterv_init);
-    MCA_COLL_UCG_SAVE_FALLBACK(gather_init);
+    MCA_COLL_UCG_SAVE_FALLBACK(gather_init);  
     MCA_COLL_UCG_SAVE_FALLBACK(gatherv_init);
     MCA_COLL_UCG_SAVE_FALLBACK(allgatherv_init);
     MCA_COLL_UCG_SAVE_FALLBACK(reduce_scatter_init);
     MCA_COLL_UCG_SAVE_FALLBACK(reduce_scatter_block_init);
-    MCA_COLL_UCG_SAVE_FALLBACK(neighbor_alltoallw_init);
 
     return OMPI_SUCCESS;
 }
@@ -585,7 +482,6 @@ static void mca_coll_ucg_free_fallback(mca_coll_ucg_module_t *ucg_module)
     MCA_COLL_UCG_FREE_FALLBACK(allgatherv_init);
     MCA_COLL_UCG_FREE_FALLBACK(reduce_scatter_init);
     MCA_COLL_UCG_FREE_FALLBACK(reduce_scatter_block_init);
-    MCA_COLL_UCG_FREE_FALLBACK(neighbor_alltoallw_init);
 
     return;
 }
@@ -597,14 +493,16 @@ static int mca_coll_ucg_create_group(mca_coll_ucg_module_t *module, ompi_communi
     ucg_group_params_t params;
 
     /* Set UCG group parameter*/
-    params.field_mask = UCG_GROUP_PARAMS_FIELD_ID | UCG_GROUP_PARAMS_FIELD_SIZE | UCG_GROUP_PARAMS_FIELD_MYRANK |
-                        UCG_GROUP_PARAMS_FIELD_RANK_MAP | UCG_GROUP_PARAMS_FIELD_OOB_GROUP;
+    params.field_mask = UCG_GROUP_PARAMS_FIELD_ID |
+                        UCG_GROUP_PARAMS_FIELD_SIZE |
+                        UCG_GROUP_PARAMS_FIELD_MYRANK |
+                        UCG_GROUP_PARAMS_FIELD_RANK_MAP |
+                        UCG_GROUP_PARAMS_FIELD_OOB_GROUP;
     params.id = ompi_comm_get_cid(comm);
     params.size = (uint32_t)ompi_comm_size(comm);
     params.myrank = (ucg_rank_t)ompi_comm_rank(comm);
     mca_coll_ucg_fill_rank_map(&params.rank_map, comm);
     mca_coll_ucg_fill_group_oob_group(&params.oob_group, comm);
-    mca_coll_ucg_fill_resolved_comm(&params.resolved_comm, comm);
 
     /* Initialize UCG group*/
     rc = ucg_group_create(cm->ucg_context, &params, &module->group);
@@ -616,7 +514,8 @@ static int mca_coll_ucg_create_group(mca_coll_ucg_module_t *module, ompi_communi
     return OMPI_SUCCESS;
 }
 
-static int mca_coll_ucg_module_enable(mca_coll_base_module_t *module, ompi_communicator_t *comm)
+static int mca_coll_ucg_module_enable(mca_coll_base_module_t *module,
+                                      ompi_communicator_t *comm)
 {
     mca_coll_ucg_module_t *ucg_module = (mca_coll_ucg_module_t *)module;
     int rc;
@@ -645,50 +544,28 @@ static int mca_coll_ucg_module_enable(mca_coll_base_module_t *module, ompi_commu
 
 static ucg_collective_type_t mca_coll_ucg_str_to_op(const char *api)
 {
-    if (0 == strcmp(api, "allgather"))
-        return UCG_COLLECTIVE_OP_ALLGATHERV;
-    if (0 == strcmp(api, "iallgather"))
-        return UCG_COLLECTIVE_OP_IALLGATHERV;
-    if (0 == strcmp(api, "allreduce"))
-        return UCG_COLLECTIVE_OP_ALLREDUCE;
-    if (0 == strcmp(api, "iallreduce"))
-        return UCG_COLLECTIVE_OP_IALLREDUCE;
-    if (0 == strcmp(api, "alltoallv"))
-        return UCG_COLLECTIVE_OP_ALLTOALLV;
-    if (0 == strcmp(api, "ialltoallv"))
-        return UCG_COLLECTIVE_OP_IALLTOALLV;
-    if (0 == strcmp(api, "barrier"))
-        return UCG_COLLECTIVE_OP_BARRIER;
-    if (0 == strcmp(api, "ibarrier"))
-        return UCG_COLLECTIVE_OP_IBARRIER;
-    if (0 == strcmp(api, "bcast"))
-        return UCG_COLLECTIVE_OP_BCAST;
-    if (0 == strcmp(api, "ibcast"))
-        return UCG_COLLECTIVE_OP_IBCAST;
-    if (0 == strcmp(api, "gather"))
-        return UCG_COLLECTIVE_OP_GATHER;
-    if (0 == strcmp(api, "igather"))
-        return UCG_COLLECTIVE_OP_IGATHER;
-    if (0 == strcmp(api, "gatherv"))
-        return UCG_COLLECTIVE_OP_GATHERV;
-    if (0 == strcmp(api, "igatherv"))
-        return UCG_COLLECTIVE_OP_IGATHERV;
-    if (0 == strcmp(api, "reduce_scatter_block"))
-        return UCG_COLLECTIVE_OP_REDUCE_SCATTER_BLOCK;
-    if (0 == strcmp(api, "ireduce_scatter_block"))
-        return UCG_COLLECTIVE_OP_IREDUCE_SCATTER_BLOCK;
-    if (0 == strcmp(api, "reduce_scatter"))
-        return UCG_COLLECTIVE_OP_REDUCE_SCATTER;
-    if (0 == strcmp(api, "ireduce_scatter"))
-        return UCG_COLLECTIVE_OP_IREDUCE_SCATTER;
-    if (0 == strcmp(api, "scatter"))
-        return UCG_COLLECTIVE_OP_SCATTER;
-    if (0 == strcmp(api, "iscatter"))
-        return UCG_COLLECTIVE_OP_ISCATTER;
-    if (0 == strcmp(api, "scatterv"))
-        return UCG_COLLECTIVE_OP_SCATTERV;
-    if (0 == strcmp(api, "iscatterv"))
-        return UCG_COLLECTIVE_OP_ISCATTERV;
+    if (0 == strcmp(api, "allgather")) return UCG_COLLECTIVE_OP_ALLGATHERV;
+    if (0 == strcmp(api, "iallgather")) return UCG_COLLECTIVE_OP_IALLGATHERV;
+    if (0 == strcmp(api, "allreduce")) return UCG_COLLECTIVE_OP_ALLREDUCE;
+    if (0 == strcmp(api, "iallreduce")) return UCG_COLLECTIVE_OP_IALLREDUCE;
+    if (0 == strcmp(api, "alltoallv")) return UCG_COLLECTIVE_OP_ALLTOALLV;
+    if (0 == strcmp(api, "ialltoallv")) return UCG_COLLECTIVE_OP_IALLTOALLV;
+    if (0 == strcmp(api, "barrier")) return UCG_COLLECTIVE_OP_BARRIER;
+    if (0 == strcmp(api, "ibarrier")) return UCG_COLLECTIVE_OP_IBARRIER;
+    if (0 == strcmp(api, "bcast")) return UCG_COLLECTIVE_OP_BCAST;
+    if (0 == strcmp(api, "ibcast")) return UCG_COLLECTIVE_OP_IBCAST;
+    if (0 == strcmp(api, "gather")) return UCG_COLLECTIVE_OP_GATHER;
+    if (0 == strcmp(api, "igather")) return UCG_COLLECTIVE_OP_IGATHER;
+    if (0 == strcmp(api, "gatherv")) return UCG_COLLECTIVE_OP_GATHERV;
+    if (0 == strcmp(api, "igatherv")) return UCG_COLLECTIVE_OP_IGATHERV;
+    if (0 == strcmp(api, "reduce_scatter_block")) return UCG_COLLECTIVE_OP_REDUCE_SCATTER_BLOCK;
+    if (0 == strcmp(api, "ireduce_scatter_block")) return UCG_COLLECTIVE_OP_IREDUCE_SCATTER_BLOCK;
+    if (0 == strcmp(api, "reduce_scatter")) return UCG_COLLECTIVE_OP_REDUCE_SCATTER;
+    if (0 == strcmp(api, "ireduce_scatter")) return UCG_COLLECTIVE_OP_IREDUCE_SCATTER;
+    if (0 == strcmp(api, "scatter")) return UCG_COLLECTIVE_OP_SCATTER;
+    if (0 == strcmp(api, "iscatter")) return UCG_COLLECTIVE_OP_ISCATTER;
+    if (0 == strcmp(api, "scatterv")) return UCG_COLLECTIVE_OP_SCATTERV;
+    if (0 == strcmp(api, "iscatterv")) return UCG_COLLECTIVE_OP_ISCATTERV;
     return UCG_COLLECTIVE_OP_SIZE;
 }
 
@@ -751,7 +628,7 @@ static void mca_coll_ucg_module_construct(mca_coll_ucg_module_t *module)
         UCG_DEBUG("Enable using cache %s", cm->enable_coll_cache);
         cm->coll_cache_list = opal_argv_split(cm->enable_coll_cache, ',');
     }
-    memset((char *)module + sizeof(module->super), 0, sizeof(*module) - sizeof(module->super));
+    memset((char*)module + sizeof(module->super), 0, sizeof(*module) - sizeof(module->super));
     module->super.coll_module_enable = mca_coll_ucg_module_enable;
     if (mca_coll_ucg_component.max_rcache_size > 0) {
         MCA_COLL_UCG_SET_CACHE_HANDLER(allreduce);
@@ -808,7 +685,6 @@ static void mca_coll_ucg_module_construct(mca_coll_ucg_module_t *module)
     MCA_COLL_UCG_SET_HANDLER(allgatherv_init);
     MCA_COLL_UCG_SET_HANDLER(reduce_scatter_init);
     MCA_COLL_UCG_SET_HANDLER(reduce_scatter_block_init);
-    MCA_COLL_UCG_SET_HANDLER(neighbor_alltoallw_init);
     return;
 }
 
@@ -831,7 +707,9 @@ static void mca_coll_ucg_module_destruct(mca_coll_ucg_module_t *ucg_module)
     return;
 }
 
-OBJ_CLASS_INSTANCE(mca_coll_ucg_module_t, mca_coll_base_module_t, mca_coll_ucg_module_construct,
+OBJ_CLASS_INSTANCE(mca_coll_ucg_module_t,
+                   mca_coll_base_module_t,
+                   mca_coll_ucg_module_construct,
                    mca_coll_ucg_module_destruct);
 
 int mca_coll_ucg_init_query(bool enable_progress_threads, bool enable_mpi_threads)
@@ -853,6 +731,7 @@ mca_coll_base_module_t *mca_coll_ucg_comm_query(ompi_communicator_t *comm, int *
         return NULL;
     }
     ucg_module->comm = comm;
+
     *priority = cm->priority;
     return &(ucg_module->super);
 }
