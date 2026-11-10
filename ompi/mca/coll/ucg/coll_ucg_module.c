@@ -174,6 +174,15 @@ static ucg_status_t mca_coll_ucg_resolved_func(void *group, int *indegree, int *
     return (res == OMPI_SUCCESS) ? UCG_OK : UCG_ERR_NO_RESOURCE;
 }
 
+static ucg_status_t mca_coll_ucg_oob_alltoallv(const void *sendbuf, void *recvbuf, int *sendcount, int *recvcount,
+                                               int *sdispl, int *rdispl, void *group)
+{
+    int res;
+    ompi_communicator_t *comm = (ompi_communicator_t *)group;
+    res = MPI_Alltoallv(sendbuf, sendcount, sdispl, MPI_CHAR, recvbuf, recvcount, rdispl, MPI_CHAR, comm);
+    return (res == OMPI_SUCCESS) ? UCG_OK : UCG_ERR_NO_RESOURCE;
+}
+
 static ucg_status_t mca_coll_ucg_oob_allgather(const void *sendbuf, void *recvbuf, int count, void *group)
 {
     int rc;
@@ -278,6 +287,7 @@ static void mca_coll_ucg_fill_oob_group(ucg_oob_group_t *oob_group)
 static void mca_coll_ucg_fill_group_oob_group(ucg_oob_group_t *oob_group, ompi_communicator_t *comm)
 {
     oob_group->allgather = ompi_mpi_thread_multiple ? mca_coll_ucg_oob_blocking_allgather : mca_coll_ucg_oob_allgather;
+    oob_group->alltoallv = mca_coll_ucg_oob_alltoallv;
     oob_group->myrank = (ucg_rank_t)ompi_comm_rank(comm);
     oob_group->size = (uint32_t)ompi_comm_size(comm);
     oob_group->group = (void *)comm;
