@@ -27,4 +27,4 @@ repos:
       - id: clang-format
         files: \.(c|h|cpp|hpp|cc|hh|cxx|hxx)$
         types_or: [c, c++]
-        exclude: ^build/|^test/|^third_party/
+        exclude: ^build/|^test/|^third_party/|^ompi/mpi/
