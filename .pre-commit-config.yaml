@@ -8,14 +8,18 @@ ci:
 
 repos:
   # pre-commit 基础检查
-  - repo: https://github.com/pre-commit/pre-commit-hooks
+  - repo: https://gitcode.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
       - id: trailing-whitespace
+        exclude: ^ompi/mpi/|^ompi/mpiext/pcollreq/mpif-h/
       - id: check-json
+        exclude: ^ompi/mpi/|^ompi/mpiext/pcollreq/mpif-h/
       - id: check-yaml
+        exclude: ^ompi/mpi/|^ompi/mpiext/pcollreq/mpif-h/
       - id: mixed-line-ending
         args: [--fix=lf]
+        exclude: ^ompi/mpi/|^ompi/mpiext/pcollreq/mpif-h/
       - id: check-merge-conflict
       - id: check-added-large-files
         args: ['--maxkb=1000']
@@ -27,4 +31,4 @@ repos:
       - id: clang-format
         files: \.(c|h|cpp|hpp|cc|hh|cxx|hxx)$
         types_or: [c, c++]
-        exclude: ^build/|^test/|^third_party/
+        exclude: ^build/|^test/|^third_party/|^ompi/mpi/|^ompi/mpiext/pcollreq/mpif-h/

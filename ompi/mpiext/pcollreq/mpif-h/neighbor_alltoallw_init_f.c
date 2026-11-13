@@ -15,11 +15,14 @@
  *                         reserved.
  * Copyright (c) 2015-2018 Research Organization for Information Science
  *                         and Technology (RIST). All rights reserved.
+ * Copyright (c) 2026      Triad National Security, LLC. All rights
+ *                         reserved.
  * $COPYRIGHT$
  *
  * Additional copyrights may follow
  *
  * $HEADER$
+ * SPDX-License-Identifier: BSD-3-Clause-Open-MPI
  */
 
 #include "ompi_config.h"
@@ -27,6 +30,7 @@
 #include "ompi/mpi/fortran/mpif-h/bindings.h"
 #include "ompi/mpi/fortran/base/constants.h"
 #include "ompi/mpiext/pcollreq/mpif-h/mpiext_pcollreq_prototypes.h"
+#include "ompi/mpi/fortran/base/fortran_base_topo_neighbors.h"
 
 #if OMPI_BUILD_MPI_PROFILING
 #if OPAL_HAVE_WEAK_SYMBOLS
@@ -81,24 +85,32 @@ void ompix_neighbor_alltoallw_init_f(char *sendbuf, MPI_Fint *sendcounts,
     MPI_Datatype *c_sendtypes, *c_recvtypes;
     MPI_Info c_info;
     MPI_Request c_request;
-    int size, c_ierr;
+    int indegree, outdegree, c_ierr;
     OMPI_ARRAY_NAME_DECL(sendcounts);
     OMPI_ARRAY_NAME_DECL(recvcounts);
 
     c_comm = PMPI_Comm_f2c(*comm);
     c_info = PMPI_Info_f2c(*info);
-    PMPI_Comm_size(c_comm, &size);
 
-    c_sendtypes = (MPI_Datatype *) malloc(size * sizeof(MPI_Datatype));
-    c_recvtypes = (MPI_Datatype *) malloc(size * sizeof(MPI_Datatype));
+    c_ierr = ompi_fortran_neighbor_count(c_comm, &indegree, &outdegree);
+    if (MPI_SUCCESS != c_ierr) {
+        if (NULL != ierr) *ierr = OMPI_INT_2_FINT(c_ierr);
+        return;
+    }
 
-    OMPI_ARRAY_FINT_2_INT(sendcounts, size);
-    OMPI_ARRAY_FINT_2_INT(recvcounts, size);
+    c_sendtypes = (MPI_Datatype *) malloc(outdegree * sizeof(MPI_Datatype));
+    c_recvtypes = (MPI_Datatype *) malloc(indegree * sizeof(MPI_Datatype));
 
-    while (size > 0) {
-        c_sendtypes[size - 1] = PMPI_Type_f2c(sendtypes[size - 1]);
-        c_recvtypes[size - 1] = PMPI_Type_f2c(recvtypes[size - 1]);
-        --size;
+    OMPI_ARRAY_FINT_2_INT(sendcounts, outdegree);
+    OMPI_ARRAY_FINT_2_INT(recvcounts, indegree);
+
+    while (outdegree > 0) {
+        c_sendtypes[outdegree - 1] = PMPI_Type_f2c(sendtypes[outdegree - 1]);
+        --outdegree;
+    }
+    while (indegree > 0) {
+        c_recvtypes[indegree - 1] = PMPI_Type_f2c(recvtypes[indegree - 1]);
+        --indegree;
     }
 
     /* Neighbor_alltoallw_init does not support MPI_IN_PLACE */
