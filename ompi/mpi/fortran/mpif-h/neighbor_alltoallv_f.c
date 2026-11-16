@@ -15,8 +15,6 @@
  *                         reserved.
  * Copyright (c) 2015      Research Organization for Information Science
  *                         and Technology (RIST). All rights reserved.
- * Copyright (c) 2026      Triad National Security, LLC. All rights
- *                         reserved.
  * $COPYRIGHT$
  *
  * Additional copyrights may follow
@@ -28,7 +26,6 @@
 
 #include "ompi/mpi/fortran/mpif-h/bindings.h"
 #include "ompi/mpi/fortran/base/constants.h"
-#include "ompi/mpi/fortran/base/fortran_base_topo_neighbors.h"
 
 #if OMPI_BUILD_MPI_PROFILING
 #if OPAL_HAVE_WEAK_SYMBOLS
@@ -80,7 +77,7 @@ void ompi_neighbor_alltoallv_f(char *sendbuf, MPI_Fint *sendcounts, MPI_Fint *sd
 {
     MPI_Comm c_comm;
     MPI_Datatype c_sendtype, c_recvtype;
-    int indegree, outdegree, c_ierr;
+    int size, c_ierr;
     OMPI_ARRAY_NAME_DECL(sendcounts);
     OMPI_ARRAY_NAME_DECL(sdispls);
     OMPI_ARRAY_NAME_DECL(recvcounts);
@@ -90,16 +87,11 @@ void ompi_neighbor_alltoallv_f(char *sendbuf, MPI_Fint *sendcounts, MPI_Fint *sd
     c_sendtype = PMPI_Type_f2c(*sendtype);
     c_recvtype = PMPI_Type_f2c(*recvtype);
 
-    c_ierr = ompi_fortran_neighbor_count(c_comm, &indegree, &outdegree);
-    if (MPI_SUCCESS != c_ierr) {
-        if (NULL != ierr) *ierr = OMPI_INT_2_FINT(c_ierr);
-        return;
-    }
-
-    OMPI_ARRAY_FINT_2_INT(sendcounts, outdegree);
-    OMPI_ARRAY_FINT_2_INT(sdispls, outdegree);
-    OMPI_ARRAY_FINT_2_INT(recvcounts, indegree);
-    OMPI_ARRAY_FINT_2_INT(rdispls, indegree);
+    PMPI_Comm_size(c_comm, &size);
+    OMPI_ARRAY_FINT_2_INT(sendcounts, size);
+    OMPI_ARRAY_FINT_2_INT(sdispls, size);
+    OMPI_ARRAY_FINT_2_INT(recvcounts, size);
+    OMPI_ARRAY_FINT_2_INT(rdispls, size);
 
     sendbuf = (char *) OMPI_F2C_IN_PLACE(sendbuf);
     sendbuf = (char *) OMPI_F2C_BOTTOM(sendbuf);
