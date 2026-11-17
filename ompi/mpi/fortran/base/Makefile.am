@@ -50,5 +50,7 @@ libmpi_fortran_base_la_SOURCES = \
         conversion_fn_null_f.c \
         f90_accessors.c \
         strings.c \
-        test_constants_f.c
+        test_constants_f.c \
+        fortran_base_topo_neighbors.h \
+        topo_neighbors.c
 endif
